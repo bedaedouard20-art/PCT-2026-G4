@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type AppRole = "admin" | "secretaire" | "enseignant";
+type CreateRole = AppRole | "none";
 
 async function assertAdmin(context: { supabase: any; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
@@ -66,7 +67,26 @@ export const assignRole = createServerFn({ method: "POST" })
       .from("user_roles")
       .insert({ user_id: data.userId, role: data.role });
     if (error && !error.message.includes("duplicate")) throw new Error(error.message);
-    return { ok: true };
+
+    let teacherLinked = false;
+    if (data.role === "enseignant") {
+      const { data: authUser, error: authErr } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+      if (authErr) throw new Error(authErr.message);
+
+      const email = authUser.user?.email;
+      if (email) {
+        const { data: linkedTeacher, error: teacherErr } = await supabaseAdmin
+          .from("enseignants")
+          .update({ user_id: data.userId })
+          .ilike("email", email)
+          .select("id")
+          .maybeSingle();
+        if (teacherErr) throw new Error(teacherErr.message);
+        teacherLinked = Boolean(linkedTeacher);
+      }
+    }
+
+    return { ok: true, teacherLinked };
   });
 
 export const removeRole = createServerFn({ method: "POST" })
@@ -94,12 +114,12 @@ export const createUserWithRole = createServerFn({ method: "POST" })
     password: string;
     nom: string;
     prenom: string;
-    role: AppRole;
+    role: CreateRole;
   }) => {
     if (!d.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) throw new Error("Email invalide");
     if (!d.password || d.password.length < 8) throw new Error("Mot de passe : 8 caractères min.");
     if (!d.nom?.trim()) throw new Error("Nom requis");
-    if (!["admin", "secretaire", "enseignant"].includes(d.role)) throw new Error("Rôle invalide");
+    if (!["none", "admin", "secretaire", "enseignant"].includes(d.role)) throw new Error("Rôle invalide");
     return d;
   })
   .handler(async ({ context, data }) => {
@@ -122,7 +142,9 @@ export const createUserWithRole = createServerFn({ method: "POST" })
 
     let teacherLinked = false;
 
-    if (data.role === "enseignant") {
+    if (data.role === "none") {
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", newUserId);
+    } else if (data.role === "enseignant") {
       const { error: roleErr } = await supabaseAdmin
         .from("user_roles")
         .insert({ user_id: newUserId, role: "enseignant" });
@@ -147,19 +169,21 @@ export const createUserWithRole = createServerFn({ method: "POST" })
     // Send invitation email (best-effort; do not fail user creation if email is not yet configured)
     let emailSent = false;
     let emailError: string | null = null;
-    try {
-      const { sendInvitationEmail } = await import("./email-invitation.server");
-      await sendInvitationEmail({
-        email: data.email,
-        nom: data.nom,
-        prenom: data.prenom,
-        provisionalPassword: data.password,
-        role: data.role,
-      });
-      emailSent = true;
-    } catch (e: any) {
-      emailError = e?.message ?? "Envoi email indisponible";
-      console.warn("[createUserWithRole] invitation email skipped:", emailError);
+    if (data.role !== "none") {
+      try {
+        const { sendInvitationEmail } = await import("./email-invitation.server");
+        await sendInvitationEmail({
+          email: data.email,
+          nom: data.nom,
+          prenom: data.prenom,
+          provisionalPassword: data.password,
+          role: data.role,
+        });
+        emailSent = true;
+      } catch (e: any) {
+        emailError = e?.message ?? "Envoi email indisponible";
+        console.warn("[createUserWithRole] invitation email skipped:", emailError);
+      }
     }
 
     return { ok: true, userId: newUserId, emailSent, emailError, teacherLinked };

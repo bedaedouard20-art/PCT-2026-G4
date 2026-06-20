@@ -26,6 +26,8 @@ type Row = {
   roles: ("admin" | "secretaire" | "enseignant")[];
 };
 
+type CreateRole = "none" | "admin" | "secretaire" | "enseignant";
+
 const ROLE_LABEL: Record<string, string> = {
   admin: "Administrateur",
   secretaire: "Secrétaire",
@@ -57,7 +59,7 @@ function UtilisateursPage() {
     nom: "",
     email: "",
     password: "",
-    role: "enseignant" as "admin" | "secretaire" | "enseignant",
+    role: "none" as CreateRole,
   });
 
   useEffect(() => {
@@ -89,8 +91,14 @@ function UtilisateursPage() {
     if (!role) return;
     setBusy(userId);
     try {
-      await doAssign({ data: { userId, role } });
+      const res: any = await doAssign({ data: { userId, role } });
       toast.success(`Rôle « ${ROLE_LABEL[role]} » attribué`);
+      if (role === "enseignant" && !res?.teacherLinked) {
+        toast.warning("Aucune fiche enseignant n'a été liée à ce compte", {
+          description: "Vérifiez que l'email Auth correspond exactement à l'email de la fiche enseignant.",
+          duration: 9000,
+        });
+      }
       setPending((p) => ({ ...p, [userId]: "" }));
       await load();
     } catch (e: any) {
@@ -118,7 +126,12 @@ function UtilisateursPage() {
     setCreating(true);
     try {
       const res: any = await doCreate({ data: form });
-      if (res?.emailSent) {
+      if (form.role === "none") {
+        toast.success(`Compte Auth ${form.email} créé`, {
+          description: "Aucun rôle n'a été attribué. Vous pourrez ajouter un rôle ensuite dans la liste.",
+          duration: 8000,
+        });
+      } else if (res?.emailSent) {
         toast.success(`Utilisateur ${form.email} créé — invitation envoyée par email`);
       } else {
         toast.success(`Utilisateur ${form.email} créé`, {
@@ -134,7 +147,7 @@ function UtilisateursPage() {
         });
       }
       setCreateOpen(false);
-      setForm({ prenom: "", nom: "", email: "", password: "", role: "enseignant" });
+      setForm({ prenom: "", nom: "", email: "", password: "", role: "none" });
       await load();
     } catch (err: any) {
       toast.error(err?.message ?? "Échec de la création");
@@ -202,6 +215,7 @@ function UtilisateursPage() {
                   <Select value={form.role} onValueChange={(v: any) => setForm({ ...form, role: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Auth seul, sans rôle</SelectItem>
                       <SelectItem value="enseignant">Enseignant</SelectItem>
                       <SelectItem value="secretaire">Secrétaire</SelectItem>
                       <SelectItem value="admin">Administrateur</SelectItem>
