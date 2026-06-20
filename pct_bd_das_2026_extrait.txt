@@ -1,0 +1,160 @@
+
+
+===== PAGE 1 =====
+Application  de  gestion  des  heures  des  enseignants  :  Cas  de  
+l’Université Virtuelle de Côte d’Ivoire
+1. Contexte et justification
+Les universités doivent assurer une gestion rigoureuse des charges d’enseignement  
+afin de garantir une organisation pédagogique efficace et une rémunération équitable  
+des enseignants. Dans le cas de l ’Université Virtuelle de Côte d’Ivoire , le modèle 
+pédagogique repose sur un système d’enseignement en ligne basé sur la production  
+et la mise à disposition de ressources pédagogiques numériques.
+Les activités des enseignants ne se limitent pas à la dispensation de cours classiques.  
+Elles incluent également :
+la conception de ressources pédagogiques numériques
+la création de séquences pédagogiques
+l’élaboration de quiz et d’évaluations
+la production d’activités interactives
+la mise à jour régulière des contenus pédagogiques
+
+
+
+===== PAGE 2 =====
+Actuellement, la gestion de ces activités peut être assurée à l’aide de fichiers Excel ou  
+de procédures manuelles. Cette situation entraîne plusieurs difficultés :
+erreurs dans les calculs des volumes horaires
+absence de traçabilité des modifications
+difficulté de consolidation des informations
+retards dans la préparation des états de paiement
+manque de visibilité sur la charge globale des enseignants
+La  mise  en  place  d’une  application  informatique  permettra  d’automatiser  ces  
+opérations,  de  fiabiliser  les  calculs  et  d’améliorer  la  gestion  administrative  des  
+enseignants.
+2. Objectifs du projet
+2.1 Objectif général
+Développer  une  application  web  permettant  la  gestion  automatisée  des  heures  
+d’enseignement et des activités pédagogiques des enseignants.
+2.2 Objectifs spécifiques
+L’application devra permettre :
+l’enregistrement et la gestion des enseignants
+la gestion des cours et des ressources pédagogiques
+la gestion des séquences pédagogiques
+le suivi des activités pédagogiques des enseignants
+le calcul automatique des volumes horaires
+l’identification des heures complémentaires
+la génération d’états récapitulatifs
+l’exportation des données vers différents formats
+3. Utilisateurs concernés
+3.1 Administrateur
+L’administrateur assure la gestion technique du système.
+Ses responsabilités sont :
+création et gestion des comptes utilisateurs
+paramétrage des années académiques
+définition des paramètres de calcul des heures
+
+
+===== PAGE 3 =====
+gestion des taux horaires
+supervision générale du système
+3.2 Secrétaire principal
+Au sein de l’Université Virtuelle de Côte d’Ivoire, le secrétaire principal assure la 
+gestion administrative des enseignants.
+Ses fonctions dans l’application sont :
+enregistrement des enseignants
+gestion des cours et des ressources pédagogiques
+saisie et validation des activités pédagogiques
+suivi des volumes horaires
+génération des états récapitulatifs
+préparation des états de paiement
+3.3 Enseignant
+Chaque enseignant dispose d’un espace personnel permettant de :
+consulter ses activités pédagogiques
+vérifier son volume horaire
+suivre ses heures complémentaires
+télécharger son récapitulatif
+4. Fonctionnalités attendues
+4.1 Gestion des enseignants
+Le système doit permettre :
+création d’un enseignant
+modification des informations
+suppression d’un enseignant
+consultation de la liste des enseignants
+Les informations enregistrées comprennent :
+nom et prénom
+grade (Assistant, Maître-Assistant, Professeur)
+statut (Permanent ou Vacataire)
+département
+taux horaire
+
+
+===== PAGE 4 =====
+coordonnées (email, téléphone)
+4.2 Gestion des cours
+Le système doit permettre la gestion des informations relatives aux cours :
+intitulé du cours
+filière
+niveau (L1, L2, L3, M1, M2)
+semestre
+nombre d’heures du cours
+nombre de crédits associés
+4.3 Gestion des ressources pédagogiques
+Dans le modèle pédagogique de l’Université Virtuelle de Côte d’Ivoire, les cours sont  
+constitués de ressources pédagogiques numériques.
+Chaque ressource peut inclure :
+contenus textuels
+vidéos pédagogiques
+documents pédagogiques
+quiz
+activités interactives
+évaluations
+Les cours sont structurés sous forme de séquences pédagogiques .
+4.4 Gestion des activités pédagogiques
+L’application doit permettre d’enregistrer :
+la création de ressources pédagogiques
+la mise à jour de ressources pédagogiques
+le niveau de complexité du contenu
+4.5 Calcul des volumes horaires
+Le système doit calculer automatiquement le volume horaire attribué aux 
+enseignants selon le niveau de production pédagogique.
+Création de ressources
+
+
+===== PAGE 5 =====
+Mise à jour de ressources
+4.6 Tableaux de bord
+L’application doit fournir plusieurs indicateurs :
+volume total d’heures par enseignant
+répartition des activités pédagogiques
+volume horaire par département
+enseignants ayant dépassé leur charge
+statistiques mensuelles
+4.7 États et exports
+Le système doit générer :
+fiche individuelle enseignant
+état global des heures
+état des paiements
+statistiques pédagogiques
+Les données doivent pouvoir être exportées en :
+PDF
+Excel
+5. Contraintes techniques
+L’application devra respecter les caractéristiques suivantes :
+application web accessible via navigateur
+base de données relationnelle (MySQL ou PostgreSQL)
+interface responsive
+gestion des rôles et permissions
+sauvegarde automatique des données
+6. Sécurité
+Le système devra intégrer :
+authentification par identifiant et mot de passe
+gestion des droits d’accès selon les profils
+
+
+===== PAGE 6 =====
+8. Livrables attendus
+Les livrables du projet sont :
+l’application web fonctionnelle
+la base de données opérationnelle
+la documentation technique
+le guide utilisateur
+le rapport final du projet
