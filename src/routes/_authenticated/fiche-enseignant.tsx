@@ -146,11 +146,11 @@ function FicheEnseignantPage() {
               <div className="flex gap-2 no-print">
                 <Button onClick={handlePrint} variant="outline" size="sm">
                   <FileText className="w-4 h-4 mr-2" />
-                  Imprimer
+                  Imprimer / PDF
                 </Button>
                 <Button onClick={handleExportPDF} size="sm">
                   <Download className="w-4 h-4 mr-2" />
-                  Télécharger TXT
+                  Exporter TXT
                 </Button>
               </div>
             </div>
