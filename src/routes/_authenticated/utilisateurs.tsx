@@ -26,8 +26,6 @@ type Row = {
   roles: ("admin" | "secretaire" | "enseignant")[];
 };
 
-type CreateRole = "none" | "admin" | "secretaire" | "enseignant";
-
 const ROLE_LABEL: Record<string, string> = {
   admin: "Administrateur",
   secretaire: "Secrétaire",
@@ -59,7 +57,7 @@ function UtilisateursPage() {
     nom: "",
     email: "",
     password: "",
-    role: "none" as CreateRole,
+    role: "enseignant" as "admin" | "secretaire" | "enseignant",
   });
 
   useEffect(() => {
@@ -126,12 +124,7 @@ function UtilisateursPage() {
     setCreating(true);
     try {
       const res: any = await doCreate({ data: form });
-      if (form.role === "none") {
-        toast.success(`Compte Auth ${form.email} créé`, {
-          description: "Aucun rôle n'a été attribué. Vous pourrez ajouter un rôle ensuite dans la liste.",
-          duration: 8000,
-        });
-      } else if (res?.emailSent) {
+      if (res?.emailSent) {
         toast.success(`Utilisateur ${form.email} créé — invitation envoyée par email`);
       } else {
         toast.success(`Utilisateur ${form.email} créé`, {
@@ -147,7 +140,7 @@ function UtilisateursPage() {
         });
       }
       setCreateOpen(false);
-      setForm({ prenom: "", nom: "", email: "", password: "", role: "none" });
+      setForm({ prenom: "", nom: "", email: "", password: "", role: "enseignant" });
       await load();
     } catch (err: any) {
       toast.error(err?.message ?? "Échec de la création");
@@ -215,7 +208,6 @@ function UtilisateursPage() {
                   <Select value={form.role} onValueChange={(v: any) => setForm({ ...form, role: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Auth seul, sans rôle</SelectItem>
                       <SelectItem value="enseignant">Enseignant</SelectItem>
                       <SelectItem value="secretaire">Secrétaire</SelectItem>
                       <SelectItem value="admin">Administrateur</SelectItem>
