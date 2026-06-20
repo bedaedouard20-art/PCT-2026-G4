@@ -8,6 +8,7 @@ import {
   DollarSign,
   FileStack,
   FileText,
+  KeyRound,
   LayoutDashboard,
   ListOrdered,
   LogOut,
@@ -113,6 +114,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
           </div>
         </div>
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="mb-2 w-full gap-2 border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+        >
+          <Link to="/change-password">
+            <KeyRound className="h-4 w-4" /> Mot de passe
+          </Link>
+        </Button>
         <Button
           onClick={signOut}
           variant="outline"

@@ -120,7 +120,23 @@ export const createUserWithRole = createServerFn({ method: "POST" })
 
     const newUserId = created.user!.id;
 
-    if (data.role !== "enseignant") {
+    let teacherLinked = false;
+
+    if (data.role === "enseignant") {
+      const { error: roleErr } = await supabaseAdmin
+        .from("user_roles")
+        .insert({ user_id: newUserId, role: "enseignant" });
+      if (roleErr && !roleErr.message.includes("duplicate")) throw new Error(roleErr.message);
+
+      const { data: linkedTeacher, error: teacherErr } = await supabaseAdmin
+        .from("enseignants")
+        .update({ user_id: newUserId })
+        .ilike("email", data.email)
+        .select("id")
+        .maybeSingle();
+      if (teacherErr) throw new Error(teacherErr.message);
+      teacherLinked = Boolean(linkedTeacher);
+    } else {
       await supabaseAdmin.from("user_roles").delete().eq("user_id", newUserId).eq("role", "enseignant");
       const { error: roleErr } = await supabaseAdmin
         .from("user_roles")
@@ -146,5 +162,5 @@ export const createUserWithRole = createServerFn({ method: "POST" })
       console.warn("[createUserWithRole] invitation email skipped:", emailError);
     }
 
-    return { ok: true, userId: newUserId, emailSent, emailError };
+    return { ok: true, userId: newUserId, emailSent, emailError, teacherLinked };
   });

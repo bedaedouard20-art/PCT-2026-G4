@@ -127,6 +127,12 @@ function UtilisateursPage() {
           duration: 8000,
         });
       }
+      if (form.role === "enseignant" && !res?.teacherLinked) {
+        toast.warning("Aucune fiche enseignant n'a été liée à ce compte", {
+          description: "Vérifiez que l'email du compte correspond exactement à l'email de la fiche enseignant.",
+          duration: 9000,
+        });
+      }
       setCreateOpen(false);
       setForm({ prenom: "", nom: "", email: "", password: "", role: "enseignant" });
       await load();
