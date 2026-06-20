@@ -6,8 +6,6 @@ export const getTeachersFiche = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     try {
       const supabase = context.supabase;
-      const user = context.userId;
-
       // Get all teachers with their complete data
       const { data: teachers, error: teachersError } = await supabase
         .from("enseignants")
@@ -17,7 +15,7 @@ export const getTeachersFiche = createServerFn({ method: "POST" })
           nom,
           email,
           telephone,
-          departement,
+          departement:departements(nom),
           grade,
           statut,
           taux_horaire
@@ -67,6 +65,7 @@ export const getTeachersFiche = createServerFn({ method: "POST" })
 
           return {
             ...teacher,
+            departement: teacher.departement?.nom ?? "-",
             charge_statutaire,
             volume_total,
             heures_complementaires,

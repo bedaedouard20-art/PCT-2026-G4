@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, Download, FileText } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useAuth } from "@/hooks/useAuth";
 import { getTeachersFiche, getFichePDF } from "@/lib/fiche.functions";
 import { downloadFile } from "@/lib/download";
 
@@ -30,11 +29,11 @@ export const Route = createFileRoute("/_authenticated/fiche-enseignant")({
 });
 
 function FicheEnseignantPage() {
-  const auth = useAuth();
   const [selectedTeacher, setSelectedTeacher] = useState<string>("");
   const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedFiche, setSelectedFiche] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const getTeachersServerFn = useServerFn(getTeachersFiche);
   const getFichePDFServerFn = useServerFn(getFichePDF);
@@ -43,25 +42,34 @@ function FicheEnseignantPage() {
   const loadTeachers = async () => {
     try {
       setLoading(true);
+      setError(null);
       const result = await getTeachersServerFn();
       setTeachers(result || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error loading teachers:", err);
+      setError(err?.message ?? "Impossible de charger les enseignants.");
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    loadTeachers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const loadFiche = async (teacherId: string) => {
     if (!teacherId) return;
     try {
       setLoading(true);
+      setError(null);
       const result = await getTeachersServerFn();
       const teacher = result?.find((t: any) => t.id === teacherId);
       setSelectedFiche(teacher || null);
       setSelectedTeacher(teacherId);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error loading fiche:", err);
+      setError(err?.message ?? "Impossible de charger la fiche enseignant.");
     } finally {
       setLoading(false);
     }
@@ -98,10 +106,16 @@ function FicheEnseignantPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           <div className="flex gap-4">
             <Select value={selectedTeacher} onValueChange={loadFiche}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sélectionner un enseignant..." />
+                <SelectValue placeholder={loading ? "Chargement..." : "Sélectionner un enseignant..."} />
               </SelectTrigger>
               <SelectContent>
                 {teachers.map((teacher) => (
