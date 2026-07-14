@@ -133,53 +133,82 @@ function LandingPage() {
       </header>
 
       <main>
-        <section className="relative overflow-hidden text-white">
-          <img
-            src={heroImg}
-            alt="Étudiants et enseignants de l'UVCI utilisant une plateforme numérique"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-sidebar/80" aria-hidden />
-          <div className="relative mx-auto flex min-h-[620px] max-w-7xl flex-col justify-center px-4 pb-10 pt-24 sm:px-6 md:min-h-[660px] lg:px-8">
-            <div className="max-w-3xl">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white/85">
+        <section className="overflow-hidden border-b bg-secondary/40 pt-16">
+          <div className="mx-auto grid min-h-[560px] max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
+            <div className="max-w-2xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-md border bg-background px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary shadow-sm">
                 <GraduationCap className="h-4 w-4" />
                 Université Virtuelle de Côte d'Ivoire
               </div>
-              <h1 className="font-display text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
-                Gestion des heures d'enseignement
+              <h1 className="font-display text-4xl font-bold leading-tight text-foreground md:text-5xl">
+                Gestion des activités pédagogiques UVCI
               </h1>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-white/82 md:text-lg">
-                Une plateforme institutionnelle pour suivre les enseignants, valider les activités
-                pédagogiques, calculer les volumes horaires et produire les états de paiement.
+              <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground md:text-lg">
+                Planifiez les cours, suivez les productions des enseignants, validez les activités et
+                calculez automatiquement les volumes horaires depuis un espace unique.
               </p>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Link to="/auth" className="sm:w-auto">
                   <Button size="lg" className="h-12 w-full gap-2 px-6 text-base sm:w-auto">
-                    Accéder à la plateforme
+                    Se connecter
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <a href="#fonctionnalites" className="sm:w-auto">
-                  <Button size="lg" variant="secondary" className="h-12 w-full px-6 text-base sm:w-auto">
-                    Voir les modules
+                <a href="#roles" className="sm:w-auto">
+                  <Button size="lg" variant="outline" className="h-12 w-full px-6 text-base sm:w-auto">
+                    Voir les rôles
                   </Button>
                 </a>
               </div>
+
+              <div className="mt-10 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-md border bg-background p-4 shadow-sm">
+                <div className="text-2xl font-bold text-foreground">3</div>
+                <div className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">Rôles</div>
+              </div>
+              <div className="rounded-md border bg-background p-4 shadow-sm">
+                <div className="text-2xl font-bold text-foreground">Auto</div>
+                <div className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">Volumes</div>
+              </div>
+              <div className="rounded-md border bg-background p-4 shadow-sm">
+                <div className="text-2xl font-bold text-foreground">Exports</div>
+                <div className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">États</div>
+              </div>
+              </div>
             </div>
 
-            <div className="mt-10 grid gap-3 sm:grid-cols-3">
-              <div className="border-l-2 border-gold bg-sidebar/75 px-4 py-3 backdrop-blur">
-                <div className="text-xl font-bold">3</div>
-                <div className="text-xs uppercase tracking-widest text-white/65">Profils utilisateurs</div>
+            <div className="relative">
+              <div className="overflow-hidden rounded-lg border bg-card shadow-[var(--shadow-elevated)]">
+                <img
+                  src={heroImg}
+                  alt="Étudiants et enseignants de l'UVCI utilisant une plateforme numérique"
+                  className="aspect-[4/3] w-full object-cover"
+                />
               </div>
-              <div className="border-l-2 border-gold bg-sidebar/75 px-4 py-3 backdrop-blur">
-                <div className="text-xl font-bold">Auto</div>
-                <div className="text-xs uppercase tracking-widest text-white/65">Calcul des volumes</div>
-              </div>
-              <div className="border-l-2 border-gold bg-sidebar/75 px-4 py-3 backdrop-blur">
-                <div className="text-xl font-bold">Excel / PDF</div>
-                <div className="text-xs uppercase tracking-widest text-white/65">États exportables</div>
+              <div className="absolute -bottom-5 left-4 right-4 rounded-lg border bg-background/95 p-4 shadow-[var(--shadow-elevated)] backdrop-blur sm:left-auto sm:right-6 sm:w-[320px]">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-md bg-accent text-primary">
+                    <ClipboardCheck className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">Suivi et validation</div>
+                    <div className="text-xs text-muted-foreground">Cours, ressources, activités, états</div>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="rounded-md bg-secondary px-2 py-2">
+                    <div className="font-bold text-foreground">Cours</div>
+                    <div className="text-muted-foreground">assignés</div>
+                  </div>
+                  <div className="rounded-md bg-secondary px-2 py-2">
+                    <div className="font-bold text-foreground">Act.</div>
+                    <div className="text-muted-foreground">à valider</div>
+                  </div>
+                  <div className="rounded-md bg-secondary px-2 py-2">
+                    <div className="font-bold text-foreground">PDF</div>
+                    <div className="text-muted-foreground">exports</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
