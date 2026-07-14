@@ -32,8 +32,6 @@ function AuthLayout() {
       "/dashboard",
       "/fiche-enseignant",
       "/enseignants",
-      "/sequences",
-      "/ressources",
       "/etats-paiement",
       "/etats-globaux",
       "/baremes",

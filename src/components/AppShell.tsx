@@ -33,13 +33,15 @@ const NAV: {
 }[] = [
   { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, roles: ["admin", "secretaire"] },
   { to: "/recapitulatif", label: "Mon récapitulatif", icon: FileText, roles: ["enseignant"] },
-  { to: "/fiche-enseignant", label: "Fiche enseignant", icon: UserCheck, roles: ["admin", "secretaire"] },
-  { to: "/enseignants", label: "Enseignants", icon: Users, roles: ["admin", "secretaire"] },
-  { to: "/cours", label: "Cours", icon: BookOpen, roles: ["admin", "secretaire", "enseignant"] },
-  { to: "/sequences", label: "Séquences", icon: ListOrdered, roles: ["admin", "secretaire"] },
-  { to: "/ressources", label: "Ressources", icon: FileStack, roles: ["admin", "secretaire"] },
-  { to: "/activites", label: "Activités pédagogiques", icon: ClipboardList, roles: ["admin", "secretaire", "enseignant"] },
-  { to: "/etats-paiement", label: "États de paiement", icon: DollarSign, roles: ["admin", "secretaire"] },
+  { to: "/cours", label: "Mes cours", icon: BookOpen, roles: ["enseignant"] },
+  { to: "/sequences", label: "Mes séquences", icon: ListOrdered, roles: ["enseignant"] },
+  { to: "/ressources", label: "Mes ressources", icon: FileStack, roles: ["enseignant"] },
+  { to: "/activites", label: "Mes activités", icon: ClipboardList, roles: ["enseignant"] },
+  { to: "/enseignants", label: "Gestion des enseignants", icon: Users, roles: ["secretaire"] },
+  { to: "/cours", label: "Cours et assignations", icon: BookOpen, roles: ["secretaire"] },
+  { to: "/activites", label: "Validation des activités", icon: ClipboardList, roles: ["secretaire"] },
+  { to: "/fiche-enseignant", label: "Suivi des enseignants", icon: UserCheck, roles: ["secretaire"] },
+  { to: "/etats-paiement", label: "États de paiement", icon: DollarSign, roles: ["secretaire"] },
   { to: "/etats-globaux", label: "États globaux", icon: BarChart3, roles: ["admin", "secretaire"] },
   { to: "/baremes", label: "Barèmes", icon: SlidersHorizontal, roles: ["admin"] },
   { to: "/annees-academiques", label: "Années académiques", icon: Calendar, roles: ["admin"] },
@@ -83,7 +85,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           const active = path === item.to;
           return (
             <Link
-              key={item.to}
+              key={`${item.to}-${item.label}`}
               to={item.to}
               onClick={() => setOpen(false)}
               className={cn(

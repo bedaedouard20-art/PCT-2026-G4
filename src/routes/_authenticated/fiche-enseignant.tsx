@@ -28,6 +28,21 @@ export const Route = createFileRoute("/_authenticated/fiche-enseignant")({
   component: FicheEnseignantPage,
 });
 
+const ACTIONS_PEDAGOGIQUES: Record<string, string> = {
+  support_cours: "Support de cours",
+  video_pedagogique: "Vidéo pédagogique",
+  quiz: "Quiz",
+  evaluation: "Évaluation",
+  activite_interactive: "Activité interactive",
+  simulation: "Simulation / serious game",
+};
+
+const STATUTS: Record<string, { label: string; variant: "default" | "outline" | "destructive" }> = {
+  en_attente: { label: "En attente", variant: "outline" },
+  approuve: { label: "Approuvée", variant: "default" },
+  rejete: { label: "Rejetée", variant: "destructive" },
+};
+
 function FicheEnseignantPage() {
   const [selectedTeacher, setSelectedTeacher] = useState<string>("");
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -231,6 +246,32 @@ function FicheEnseignantPage() {
                   </CardContent>
                 </Card>
               </div>
+              <div className="grid grid-cols-3 gap-4">
+                <Card className="print:border-gray-300">
+                  <CardContent className="pt-4">
+                    <div className="text-sm text-muted-foreground">Activités approuvées</div>
+                    <div className="text-2xl font-bold text-green-700">
+                      {selectedFiche.activites_approuvees ?? 0}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="print:border-gray-300">
+                  <CardContent className="pt-4">
+                    <div className="text-sm text-muted-foreground">À valider</div>
+                    <div className="text-2xl font-bold text-orange-600">
+                      {selectedFiche.activites_en_attente ?? 0}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="print:border-gray-300">
+                  <CardContent className="pt-4">
+                    <div className="text-sm text-muted-foreground">Rejetées</div>
+                    <div className="text-2xl font-bold text-destructive">
+                      {selectedFiche.activites_rejetees ?? 0}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Rémunération */}
@@ -266,34 +307,94 @@ function FicheEnseignantPage() {
               </Table>
             </div>
 
-            {/* Cours assignés */}
-            {selectedFiche.courses && selectedFiche.courses.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold mb-3">
-                  Cours Assignés ({selectedFiche.courses.length})
+            <Tabs defaultValue="calendrier" className="no-print">
+              <TabsList>
+                <TabsTrigger value="calendrier">Calendrier effectif</TabsTrigger>
+                <TabsTrigger value="cours">Cours assignés</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="calendrier" className="mt-4">
+                <h3 className="mb-3 text-lg font-semibold">
+                  Calendrier des activités ({selectedFiche.activities?.length ?? 0})
                 </h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Intitulé</TableHead>
-                      <TableHead>Filière</TableHead>
-                      <TableHead>Niveau</TableHead>
-                      <TableHead className="text-right">Heures</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedFiche.courses.map((course: any) => (
-                      <TableRow key={course.id}>
-                        <TableCell className="font-medium">{course.intitule}</TableCell>
-                        <TableCell>{course.filiere}</TableCell>
-                        <TableCell>{course.niveau}</TableCell>
-                        <TableCell className="text-right">{course.nombre_heures}h</TableCell>
+                {selectedFiche.activities && selectedFiche.activities.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Cours</TableHead>
+                        <TableHead>Action</TableHead>
+                        <TableHead>Niveau</TableHead>
+                        <TableHead className="text-right">Volume</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Commentaire</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+                    </TableHeader>
+                    <TableBody>
+                      {selectedFiche.activities.map((activity: any) => {
+                        const status = activity.statut_validation ?? "en_attente";
+                        const statusConfig = STATUTS[status] ?? STATUTS.en_attente;
+                        return (
+                          <TableRow key={activity.id}>
+                            <TableCell className="whitespace-nowrap">
+                              {new Date(activity.date_activite).toLocaleDateString("fr-FR")}
+                            </TableCell>
+                            <TableCell className="max-w-[220px] truncate">
+                              {activity.cours?.intitule ?? "-"}
+                            </TableCell>
+                            <TableCell>
+                              {ACTIONS_PEDAGOGIQUES[activity.action_pedagogique] ?? activity.type_activite}
+                            </TableCell>
+                            <TableCell>{activity.niveau_ressource?.replace("niveau_", "N")}</TableCell>
+                            <TableCell className="text-right font-mono font-semibold">
+                              {Number(activity.volume_horaire_calcule ?? 0).toFixed(2)} h
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
+                            </TableCell>
+                            <TableCell className="max-w-[260px] truncate">
+                              {activity.commentaire_validation ?? "-"}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Aucune activité déclarée pour cet enseignant.</p>
+                )}
+              </TabsContent>
+
+              <TabsContent value="cours" className="mt-4">
+                <h3 className="mb-3 text-lg font-semibold">
+                  Cours assignés ({selectedFiche.courses?.length ?? 0})
+                </h3>
+                {selectedFiche.courses && selectedFiche.courses.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Intitulé</TableHead>
+                        <TableHead>Filière</TableHead>
+                        <TableHead>Niveau</TableHead>
+                        <TableHead className="text-right">Heures</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedFiche.courses.map((course: any) => (
+                        <TableRow key={course.id}>
+                          <TableCell className="font-medium">{course.intitule}</TableCell>
+                          <TableCell>{course.filiere}</TableCell>
+                          <TableCell>{course.niveau}</TableCell>
+                          <TableCell className="text-right">{course.nombre_heures}h</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Aucun cours assigné.</p>
+                )}
+              </TabsContent>
+            </Tabs>
 
             {/* Footer pour impression */}
             <div className="border-t pt-4 text-xs text-muted-foreground print:border-black print:text-black">

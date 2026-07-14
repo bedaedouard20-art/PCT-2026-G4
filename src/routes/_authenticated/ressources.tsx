@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -21,12 +21,12 @@ export const Route = createFileRoute("/_authenticated/ressources")({
 });
 
 const TYPES = [
-  { value: "texte", label: "Texte" },
-  { value: "video", label: "Vidéo" },
-  { value: "document", label: "Document" },
-  { value: "quiz", label: "Quiz" },
-  { value: "activite_interactive", label: "Activité interactive" },
-  { value: "evaluation", label: "Évaluation" },
+  { value: "texte", label: "Texte", help: "Support textuel ou consigne simple" },
+  { value: "video", label: "Vidéo", help: "Lien vidéo ou capsule pédagogique" },
+  { value: "document", label: "Document", help: "PDF, diaporama ou support de cours" },
+  { value: "quiz", label: "Quiz", help: "Questions, réponses attendues ou lien vers un quiz" },
+  { value: "activite_interactive", label: "Activité interactive", help: "Exercice guidé, simulation ou activité en ligne" },
+  { value: "evaluation", label: "Évaluation", help: "Devoir, test ou activité notée" },
 ];
 
 const EMPTY_FORM = {
@@ -40,14 +40,18 @@ const EMPTY_FORM = {
 
 function RessourcesPage() {
   const qc = useQueryClient();
-  const { isStaff } = useAuth();
+  const { hasRole, user } = useAuth();
+  const canManageResources = hasRole("admin") || hasRole("secretaire") || hasRole("enseignant");
+  const isTeacherOnly = hasRole("enseignant") && !hasRole("admin") && !hasRole("secretaire");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<any>(EMPTY_FORM);
 
+  const selectedType = TYPES.find((type) => type.value === form.type_ressource);
+
   const { data: sequences } = useQuery({
-    queryKey: ["sequences-list"],
-    enabled: isStaff,
+    queryKey: ["sequences-list-for-resources", user?.id],
+    enabled: canManageResources,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sequences_pedagogiques")
@@ -59,8 +63,8 @@ function RessourcesPage() {
   });
 
   const { data: ressources, isLoading, error } = useQuery({
-    queryKey: ["ressources"],
-    enabled: isStaff,
+    queryKey: ["ressources", user?.id],
+    enabled: canManageResources,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ressources_pedagogiques")
@@ -81,6 +85,11 @@ function RessourcesPage() {
   function resetForm() {
     setEditingId(null);
     setForm(EMPTY_FORM);
+  }
+
+  function startCreate() {
+    resetForm();
+    setOpen(true);
   }
 
   function startEdit(ressource: any) {
@@ -109,6 +118,7 @@ function RessourcesPage() {
 
     if (!payload.sequence_id) return toast.error("Sélectionnez une séquence");
     if (!payload.titre) return toast.error("Le titre est requis");
+    if (payload.ordre_affichage < 0) return toast.error("L'ordre ne peut pas être négatif");
 
     const request = editingId
       ? supabase.from("ressources_pedagogiques").update(payload).eq("id", editingId)
@@ -131,93 +141,39 @@ function RessourcesPage() {
     qc.invalidateQueries({ queryKey: ["ressources"] });
   }
 
-  if (!isStaff) {
-    return (
-      <Card>
-        <CardContent className="pt-6 text-sm text-muted-foreground">
-          Accès réservé à l'administration.
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold">Ressources pédagogiques</h1>
-          <p className="text-muted-foreground">Gérez les contenus, vidéos, documents, quiz et évaluations des séquences</p>
+          <h1 className="font-display text-3xl font-bold">
+            {isTeacherOnly ? "Mes ressources" : "Ressources pédagogiques"}
+          </h1>
+          <p className="text-muted-foreground">
+            {isTeacherOnly
+              ? "Ajoutez documents, vidéos, quiz et activités interactives à vos séquences."
+              : "Consultez les contenus, vidéos, documents, quiz et évaluations des séquences."}
+          </p>
         </div>
-        <Dialog open={open} onOpenChange={(value) => {
-          setOpen(value);
-          if (!value) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="h-4 w-4" /> Ajouter</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{editingId ? "Modifier la ressource" : "Nouvelle ressource"}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <Label>Séquence</Label>
-                <Select value={form.sequence_id} onValueChange={(v) => setForm({ ...form, sequence_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Choisir une séquence" /></SelectTrigger>
-                  <SelectContent>
-                    {(sequences ?? []).map((s: any) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.cours?.intitule ?? "Cours"} - Seq. {s.numero_sequence}: {s.titre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Type</Label>
-                <Select value={form.type_ressource} onValueChange={(v) => setForm({ ...form, type_ressource: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Ordre</Label>
-                <Input type="number" min={0} value={form.ordre_affichage} onChange={(e) => setForm({ ...form, ordre_affichage: e.target.value })} />
-              </div>
-              <div className="col-span-2">
-                <Label>Titre</Label>
-                <Input required value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} />
-              </div>
-              <div className="col-span-2">
-                <Label>Description</Label>
-                <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-              </div>
-              <div className="col-span-2">
-                <Label>URL ou contenu</Label>
-                <Textarea value={form.url_ou_contenu} onChange={(e) => setForm({ ...form, url_ou_contenu: e.target.value })} />
-              </div>
-              <div className="col-span-2 flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
-                <Button type="submit">Enregistrer</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button className="gap-2" onClick={startCreate}>
+          <Plus className="h-4 w-4" /> Ajouter
+        </Button>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Liste des ressources</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>{isTeacherOnly ? "Ressources de mes séquences" : "Liste des ressources"}</CardTitle>
+        </CardHeader>
         <CardContent>
           {error ? (
             <p className="text-sm text-destructive">{error.message}</p>
           ) : isLoading ? (
             <p className="text-sm text-muted-foreground">Chargement...</p>
           ) : (ressources ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucune ressource enregistree.</p>
+            <p className="text-sm text-muted-foreground">
+              {isTeacherOnly
+                ? "Aucune ressource enregistrée pour vos séquences."
+                : "Aucune ressource enregistrée."}
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -246,7 +202,9 @@ function RessourcesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{TYPES.find((type) => type.value === r.type_ressource)?.label ?? r.type_ressource}</Badge>
+                      <Badge variant="secondary">
+                        {TYPES.find((type) => type.value === r.type_ressource)?.label ?? r.type_ressource}
+                      </Badge>
                     </TableCell>
                     <TableCell className="max-w-[340px] truncate">
                       {r.description || r.url_ou_contenu || "-"}
@@ -254,10 +212,10 @@ function RessourcesPage() {
                     <TableCell className="text-right">{r.ordre_affichage}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => startEdit(r)}>
+                        <Button variant="ghost" size="icon" onClick={() => startEdit(r)} title="Modifier">
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(r.id)}>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(r.id)} title="Supprimer">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -269,6 +227,89 @@ function RessourcesPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={open}
+        onOpenChange={(value) => {
+          setOpen(value);
+          if (!value) resetForm();
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Modifier la ressource" : "Nouvelle ressource"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Label>Séquence</Label>
+              <Select value={form.sequence_id} onValueChange={(v) => setForm({ ...form, sequence_id: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir une séquence" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(sequences ?? []).map((s: any) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.cours?.intitule ?? "Cours"} - Seq. {s.numero_sequence}: {s.titre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isTeacherOnly && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Seules les séquences de vos cours assignés sont disponibles.
+                </p>
+              )}
+            </div>
+            <div>
+              <Label>Type</Label>
+              <Select value={form.type_ressource} onValueChange={(v) => setForm({ ...form, type_ressource: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedType && <p className="mt-1 text-xs text-muted-foreground">{selectedType.help}</p>}
+            </div>
+            <div>
+              <Label>Ordre d'affichage</Label>
+              <Input
+                type="number"
+                min={0}
+                value={form.ordre_affichage}
+                onChange={(e) => setForm({ ...form, ordre_affichage: e.target.value })}
+              />
+            </div>
+            <div className="col-span-2">
+              <Label>Titre</Label>
+              <Input required value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} />
+            </div>
+            <div className="col-span-2">
+              <Label>Description</Label>
+              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </div>
+            <div className="col-span-2">
+              <Label>URL, consigne ou contenu</Label>
+              <Textarea
+                value={form.url_ou_contenu}
+                onChange={(e) => setForm({ ...form, url_ou_contenu: e.target.value })}
+                placeholder="Lien, texte du quiz, consigne d'activité interactive, corrigé attendu..."
+              />
+            </div>
+            <div className="col-span-2 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Annuler
+              </Button>
+              <Button type="submit">Enregistrer</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

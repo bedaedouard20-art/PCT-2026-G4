@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -30,14 +30,16 @@ const EMPTY_FORM = {
 
 function SequencesPage() {
   const qc = useQueryClient();
-  const { isStaff } = useAuth();
+  const { hasRole, user } = useAuth();
+  const canManageSequences = hasRole("admin") || hasRole("secretaire") || hasRole("enseignant");
+  const isTeacherOnly = hasRole("enseignant") && !hasRole("admin") && !hasRole("secretaire");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<any>(EMPTY_FORM);
 
   const { data: cours } = useQuery({
-    queryKey: ["cours-list"],
-    enabled: isStaff,
+    queryKey: ["cours-list-for-sequences", user?.id],
+    enabled: canManageSequences,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("cours")
@@ -49,8 +51,8 @@ function SequencesPage() {
   });
 
   const { data: sequences, isLoading, error } = useQuery({
-    queryKey: ["sequences"],
-    enabled: isStaff,
+    queryKey: ["sequences", user?.id],
+    enabled: canManageSequences,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sequences_pedagogiques")
@@ -64,6 +66,11 @@ function SequencesPage() {
   function resetForm() {
     setEditingId(null);
     setForm(EMPTY_FORM);
+  }
+
+  function startCreate() {
+    resetForm();
+    setOpen(true);
   }
 
   function startEdit(sequence: any) {
@@ -91,6 +98,7 @@ function SequencesPage() {
     if (!payload.cours_id) return toast.error("Sélectionnez un cours");
     if (!payload.titre) return toast.error("Le titre est requis");
     if (payload.numero_sequence <= 0) return toast.error("Le numéro de séquence doit être positif");
+    if (payload.nombre_heures < 0) return toast.error("Le nombre d'heures ne peut pas être négatif");
 
     const request = editingId
       ? supabase.from("sequences_pedagogiques").update(payload).eq("id", editingId)
@@ -113,82 +121,39 @@ function SequencesPage() {
     qc.invalidateQueries({ queryKey: ["sequences"] });
   }
 
-  if (!isStaff) {
-    return (
-      <Card>
-        <CardContent className="pt-6 text-sm text-muted-foreground">
-          Accès réservé à l'administration.
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold">Séquences pédagogiques</h1>
-          <p className="text-muted-foreground">Structurez chaque cours en séquences ordonnées</p>
+          <h1 className="font-display text-3xl font-bold">
+            {isTeacherOnly ? "Mes séquences" : "Séquences pédagogiques"}
+          </h1>
+          <p className="text-muted-foreground">
+            {isTeacherOnly
+              ? "Structurez les cours qui vous sont assignés en séquences pédagogiques."
+              : "Consultez et ajustez les séquences pédagogiques des cours."}
+          </p>
         </div>
-        <Dialog open={open} onOpenChange={(value) => {
-          setOpen(value);
-          if (!value) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="h-4 w-4" /> Ajouter</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{editingId ? "Modifier la séquence" : "Nouvelle séquence"}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <Label>Cours</Label>
-                <Select value={form.cours_id} onValueChange={(v) => setForm({ ...form, cours_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Choisir un cours" /></SelectTrigger>
-                  <SelectContent>
-                    {(cours ?? []).map((c: any) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.intitule} - {c.niveau}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Numéro</Label>
-                <Input type="number" min={1} required value={form.numero_sequence} onChange={(e) => setForm({ ...form, numero_sequence: e.target.value })} />
-              </div>
-              <div>
-                <Label>Nombre d'heures</Label>
-                <Input type="number" min={0} value={form.nombre_heures} onChange={(e) => setForm({ ...form, nombre_heures: e.target.value })} />
-              </div>
-              <div className="col-span-2">
-                <Label>Titre</Label>
-                <Input required value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} />
-              </div>
-              <div className="col-span-2">
-                <Label>Description</Label>
-                <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-              </div>
-              <div className="col-span-2 flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
-                <Button type="submit">Enregistrer</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button className="gap-2" onClick={startCreate}>
+          <Plus className="h-4 w-4" /> Ajouter
+        </Button>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Liste des séquences</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>{isTeacherOnly ? "Séquences de mes cours" : "Liste des séquences"}</CardTitle>
+        </CardHeader>
         <CardContent>
           {error ? (
             <p className="text-sm text-destructive">{error.message}</p>
           ) : isLoading ? (
             <p className="text-sm text-muted-foreground">Chargement...</p>
           ) : (sequences ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucune séquence enregistrée.</p>
+            <p className="text-sm text-muted-foreground">
+              {isTeacherOnly
+                ? "Aucune séquence enregistrée pour vos cours."
+                : "Aucune séquence enregistrée."}
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -210,16 +175,18 @@ function SequencesPage() {
                         {s.cours?.filiere ?? ""} {s.cours?.niveau ? `- ${s.cours.niveau}` : ""}
                       </div>
                     </TableCell>
-                    <TableCell><Badge variant="secondary">No {s.numero_sequence}</Badge></TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">No {s.numero_sequence}</Badge>
+                    </TableCell>
                     <TableCell className="font-medium">{s.titre}</TableCell>
                     <TableCell className="max-w-[280px] truncate">{s.description ?? "-"}</TableCell>
                     <TableCell className="text-right">{s.nombre_heures} h</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => startEdit(s)}>
+                        <Button variant="ghost" size="icon" onClick={() => startEdit(s)} title="Modifier">
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)}>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)} title="Supprimer">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -231,6 +198,75 @@ function SequencesPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={open}
+        onOpenChange={(value) => {
+          setOpen(value);
+          if (!value) resetForm();
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Modifier la séquence" : "Nouvelle séquence"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Label>Cours</Label>
+              <Select value={form.cours_id} onValueChange={(v) => setForm({ ...form, cours_id: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir un cours" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(cours ?? []).map((c: any) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.intitule} - {c.niveau}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isTeacherOnly && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Seuls les cours qui vous sont assignés sont disponibles.
+                </p>
+              )}
+            </div>
+            <div>
+              <Label>Numéro</Label>
+              <Input
+                type="number"
+                min={1}
+                required
+                value={form.numero_sequence}
+                onChange={(e) => setForm({ ...form, numero_sequence: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Nombre d'heures</Label>
+              <Input
+                type="number"
+                min={0}
+                value={form.nombre_heures}
+                onChange={(e) => setForm({ ...form, nombre_heures: e.target.value })}
+              />
+            </div>
+            <div className="col-span-2">
+              <Label>Titre</Label>
+              <Input required value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} />
+            </div>
+            <div className="col-span-2">
+              <Label>Description</Label>
+              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </div>
+            <div className="col-span-2 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Annuler
+              </Button>
+              <Button type="submit">Enregistrer</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

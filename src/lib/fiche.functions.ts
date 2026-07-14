@@ -30,11 +30,32 @@ export const getTeachersFiche = createServerFn({ method: "POST" })
           // Get validated activities for this teacher
           const { data: activities } = await supabase
             .from("activites_pedagogiques")
-            .select("volume_horaire_calcule, statut_validation")
+            .select(`
+              id,
+              date_activite,
+              action_pedagogique,
+              type_activite,
+              niveau_ressource,
+              nombre_heures_ressource,
+              volume_horaire_calcule,
+              statut_validation,
+              commentaire_validation,
+              cours:cours(intitule)
+            `)
             .eq("enseignant_id", teacher.id)
-            .eq("statut_validation", "approuve");
+            .order("date_activite", { ascending: false });
 
-          const volume_total = (activities || []).reduce(
+          const approvedActivities = (activities || []).filter(
+            (act: any) => act.statut_validation === "approuve"
+          );
+          const pendingActivities = (activities || []).filter(
+            (act: any) => (act.statut_validation ?? "en_attente") === "en_attente"
+          );
+          const rejectedActivities = (activities || []).filter(
+            (act: any) => act.statut_validation === "rejete"
+          );
+
+          const volume_total = approvedActivities.reduce(
             (sum, act: any) => sum + Number(act.volume_horaire_calcule || 0),
             0
           );
@@ -73,6 +94,10 @@ export const getTeachersFiche = createServerFn({ method: "POST" })
             montant_comp,
             montant_total,
             courses: courses || [],
+            activities: activities || [],
+            activites_approuvees: approvedActivities.length,
+            activites_en_attente: pendingActivities.length,
+            activites_rejetees: rejectedActivities.length,
           };
         })
       );

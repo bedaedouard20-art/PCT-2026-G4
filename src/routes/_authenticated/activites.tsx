@@ -31,6 +31,51 @@ const NIVEAUX = [
   { v: "niveau_3", l: "Niveau 3 - serious games, simulations" },
 ];
 
+const ACTIONS_PEDAGOGIQUES = [
+  {
+    v: "support_cours",
+    l: "Support de cours / contenu simple",
+    niveau: "niveau_1",
+    heures: 6,
+    aide: "Document, texte, diaporama ou support statique.",
+  },
+  {
+    v: "video_pedagogique",
+    l: "Vidéo pédagogique",
+    niveau: "niveau_1",
+    heures: 6,
+    aide: "Capsule vidéo ou lien vers une ressource audiovisuelle.",
+  },
+  {
+    v: "quiz",
+    l: "Quiz",
+    niveau: "niveau_1",
+    heures: 4,
+    aide: "Questions de contrôle, QCM ou auto-évaluation.",
+  },
+  {
+    v: "evaluation",
+    l: "Évaluation / devoir",
+    niveau: "niveau_2",
+    heures: 8,
+    aide: "Devoir, test, activité notée ou grille d'évaluation.",
+  },
+  {
+    v: "activite_interactive",
+    l: "Activité interactive",
+    niveau: "niveau_2",
+    heures: 10,
+    aide: "Exercice guidé, activité en ligne ou parcours interactif.",
+  },
+  {
+    v: "simulation",
+    l: "Simulation / serious game",
+    niveau: "niveau_3",
+    heures: 15,
+    aide: "Simulation, serious game ou ressource avancée.",
+  },
+];
+
 const STATUTS: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
   en_attente: { label: "En attente", variant: "outline" },
   approuve: { label: "Approuvée", variant: "default" },
@@ -39,19 +84,27 @@ const STATUTS: Record<string, { label: string; variant: "default" | "secondary" 
 
 function ActivitesPage() {
   const qc = useQueryClient();
-  const { isStaff, user } = useAuth();
+  const { isStaff, hasRole, user } = useAuth();
+  const isTeacherOnly = hasRole("enseignant") && !isStaff;
+  const canCreateActivity = isStaff || isTeacherOnly;
+  const canValidateActivities = hasRole("secretaire");
   const [open, setOpen] = useState(false);
   const [rejecting, setRejecting] = useState<any | null>(null);
   const [motifRejet, setMotifRejet] = useState("");
   const [form, setForm] = useState<any>({
     enseignant_id: "",
     cours_id: "",
+    action_pedagogique: "support_cours",
     type_activite: "creation",
     niveau_ressource: "niveau_1",
-    nombre_heures_ressource: "10",
+    nombre_heures_ressource: "6",
     description: "",
     date_activite: new Date().toISOString().slice(0, 10),
   });
+
+  const selectedAction = useMemo(() => {
+    return ACTIONS_PEDAGOGIQUES.find((action) => action.v === form.action_pedagogique) ?? ACTIONS_PEDAGOGIQUES[0];
+  }, [form.action_pedagogique]);
 
   const { data: baremes } = useQuery({
     queryKey: ["baremes-actifs"],
@@ -67,10 +120,10 @@ function ActivitesPage() {
 
   const activeCoefficient = useMemo(() => {
     const bareme = (baremes ?? []).find((b: any) =>
-      b.type_activite === form.type_activite && b.niveau_ressource === form.niveau_ressource
+      b.type_activite === form.type_activite && b.niveau_ressource === selectedAction.niveau
     );
     return Number(bareme?.coefficient ?? 0);
-  }, [baremes, form.type_activite, form.niveau_ressource]);
+  }, [baremes, form.type_activite, selectedAction.niveau]);
 
   const previewVolume = useMemo(() => {
     return (Number(form.nombre_heures_ressource) * activeCoefficient).toFixed(2);
@@ -86,9 +139,23 @@ function ActivitesPage() {
     },
   });
 
+  const { data: enseignantConnecte } = useQuery({
+    queryKey: ["enseignant-connecte", user?.id],
+    enabled: isTeacherOnly && Boolean(user?.id),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("enseignants")
+        .select("id, nom, prenom")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: cours } = useQuery({
-    queryKey: ["cours-list"],
-    enabled: isStaff,
+    queryKey: ["cours-list", user?.id],
+    enabled: canCreateActivity,
     queryFn: async () => {
       const { data, error } = await supabase.from("cours").select("id, intitule").order("intitule");
       if (error) throw error;
@@ -108,6 +175,22 @@ function ActivitesPage() {
     },
   });
 
+  const activityStats = useMemo(() => {
+    const rows = activites ?? [];
+    const enAttente = rows.filter((a: any) => (a.statut_validation ?? "en_attente") === "en_attente");
+    const approuvees = rows.filter((a: any) => (a.statut_validation ?? (a.valide ? "approuve" : "en_attente")) === "approuve");
+    const rejetees = rows.filter((a: any) => (a.statut_validation ?? "en_attente") === "rejete");
+    const volumeApprouve = approuvees.reduce((sum: number, a: any) => sum + Number(a.volume_horaire_calcule ?? 0), 0);
+
+    return {
+      total: rows.length,
+      enAttente: enAttente.length,
+      approuvees: approuvees.length,
+      rejetees: rejetees.length,
+      volumeApprouve,
+    };
+  }, [activites]);
+
   function invalidateActivityData() {
     qc.invalidateQueries({ queryKey: ["activites"] });
     qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
@@ -115,11 +198,13 @@ function ActivitesPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    const enseignantId = isTeacherOnly ? enseignantConnecte?.id : form.enseignant_id;
     const payload = {
-      enseignant_id: form.enseignant_id,
+      enseignant_id: enseignantId,
       cours_id: form.cours_id || null,
+      action_pedagogique: form.action_pedagogique,
       type_activite: form.type_activite,
-      niveau_ressource: form.niveau_ressource,
+      niveau_ressource: selectedAction.niveau,
       nombre_heures_ressource: Number(form.nombre_heures_ressource),
       description: form.description || null,
       date_activite: form.date_activite,
@@ -129,7 +214,8 @@ function ActivitesPage() {
       validee_par: null,
       date_validation: null,
     };
-    if (!payload.enseignant_id) return toast.error("Sélectionnez un enseignant");
+    if (!payload.enseignant_id) return toast.error("Aucune fiche enseignant n'est liée à ce compte");
+    if (!payload.cours_id) return toast.error("Sélectionnez un cours");
     const { error } = await supabase.from("activites_pedagogiques").insert(payload);
     if (error) return toast.error(error.message);
     toast.success("Activité enregistrée et mise en attente de validation");
@@ -146,6 +232,7 @@ function ActivitesPage() {
   }
 
   async function approveActivity(id: string) {
+    if (!canValidateActivities) return toast.error("Validation réservée au secrétariat");
     const { error } = await supabase
       .from("activites_pedagogiques")
       .update({
@@ -163,6 +250,7 @@ function ActivitesPage() {
 
   async function rejectActivity(e: React.FormEvent) {
     e.preventDefault();
+    if (!canValidateActivities) return toast.error("Validation réservée au secrétariat");
     if (!rejecting) return;
     if (!motifRejet.trim()) {
       toast.error("Le motif de rejet est obligatoire");
@@ -196,10 +284,16 @@ function ActivitesPage() {
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold">Activités pédagogiques</h1>
-          <p className="text-muted-foreground">Saisie, validation et suivi des volumes horaires calculés</p>
+          <h1 className="font-display text-3xl font-bold">
+            {isTeacherOnly ? "Mes activités pédagogiques" : "Activités pédagogiques"}
+          </h1>
+          <p className="text-muted-foreground">
+            {isTeacherOnly
+              ? "Déclarez vos actions pédagogiques, avec niveau et volume calculés automatiquement."
+              : "Saisie, validation et suivi des volumes horaires calculés."}
+          </p>
         </div>
-        {isStaff && (
+        {canCreateActivity && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2"><Plus className="h-4 w-4" /> Ajouter</Button>
@@ -207,19 +301,28 @@ function ActivitesPage() {
             <DialogContent className="max-w-2xl">
               <DialogHeader><DialogTitle>Nouvelle activité pédagogique</DialogTitle></DialogHeader>
               <form onSubmit={handleCreate} className="grid grid-cols-2 gap-4">
+                {isStaff ? (
+                  <div className="col-span-2">
+                    <Label>Enseignant</Label>
+                    <Select value={form.enseignant_id} onValueChange={(v) => setForm({ ...form, enseignant_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="Choisir un enseignant" /></SelectTrigger>
+                      <SelectContent>
+                        {(enseignants ?? []).map((e: any) => (
+                          <SelectItem key={e.id} value={e.id}>{e.prenom} {e.nom}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="col-span-2 rounded-md border bg-secondary/40 p-3 text-sm">
+                    <div className="text-xs text-muted-foreground">Enseignant</div>
+                    <div className="font-medium">
+                      {enseignantConnecte ? `${enseignantConnecte.prenom} ${enseignantConnecte.nom}` : "Compte enseignant non lié"}
+                    </div>
+                  </div>
+                )}
                 <div className="col-span-2">
-                  <Label>Enseignant</Label>
-                  <Select value={form.enseignant_id} onValueChange={(v) => setForm({ ...form, enseignant_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="Choisir un enseignant" /></SelectTrigger>
-                    <SelectContent>
-                      {(enseignants ?? []).map((e: any) => (
-                        <SelectItem key={e.id} value={e.id}>{e.prenom} {e.nom}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2">
-                  <Label>Cours (optionnel)</Label>
+                  <Label>Cours</Label>
                   <Select value={form.cours_id} onValueChange={(v) => setForm({ ...form, cours_id: v })}>
                     <SelectTrigger><SelectValue placeholder="Choisir un cours" /></SelectTrigger>
                     <SelectContent>
@@ -228,6 +331,29 @@ function ActivitesPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="col-span-2">
+                  <Label>Action pédagogique réalisée</Label>
+                  <Select
+                    value={form.action_pedagogique}
+                    onValueChange={(v) => {
+                      const action = ACTIONS_PEDAGOGIQUES.find((item) => item.v === v) ?? ACTIONS_PEDAGOGIQUES[0];
+                      setForm({
+                        ...form,
+                        action_pedagogique: action.v,
+                        niveau_ressource: action.niveau,
+                        nombre_heures_ressource: String(action.heures),
+                      });
+                    }}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ACTIONS_PEDAGOGIQUES.map((action) => (
+                        <SelectItem key={action.v} value={action.v}>{action.l}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-xs text-muted-foreground">{selectedAction.aide}</p>
                 </div>
                 <div>
                   <Label>Type d'activité</Label>
@@ -239,13 +365,10 @@ function ActivitesPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Niveau de la ressource</Label>
-                  <Select value={form.niveau_ressource} onValueChange={(v) => setForm({ ...form, niveau_ressource: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {NIVEAUX.map((n) => <SelectItem key={n.v} value={n.v}>{n.l}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Label>Niveau calculé</Label>
+                  <div className="flex h-10 items-center rounded-md border bg-secondary/40 px-3 text-sm font-medium">
+                    {NIVEAUX.find((n) => n.v === selectedAction.niveau)?.l ?? selectedAction.niveau}
+                  </div>
                 </div>
                 <div>
                   <Label>Nombre d'heures de ressource</Label>
@@ -281,6 +404,37 @@ function ActivitesPage() {
         )}
       </div>
 
+      {isStaff && (
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-sm text-muted-foreground">À valider</div>
+              <div className="font-display text-3xl font-bold text-orange-600">{activityStats.enAttente}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-sm text-muted-foreground">Approuvées</div>
+              <div className="font-display text-3xl font-bold text-green-700">{activityStats.approuvees}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-sm text-muted-foreground">Rejetées</div>
+              <div className="font-display text-3xl font-bold text-destructive">{activityStats.rejetees}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-sm text-muted-foreground">Volume validé</div>
+              <div className="font-display text-3xl font-bold text-primary">
+                {activityStats.volumeApprouve.toFixed(1)} h
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Card>
         <CardHeader><CardTitle>Activités enregistrées</CardTitle></CardHeader>
         <CardContent>
@@ -298,13 +452,14 @@ function ActivitesPage() {
                     <TableHead>Date</TableHead>
                     <TableHead>Enseignant</TableHead>
                     <TableHead>Cours</TableHead>
+                    <TableHead>Action</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Niveau</TableHead>
                     <TableHead>Heures</TableHead>
                     <TableHead>Volume</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead>Commentaire</TableHead>
-                    {isStaff && <TableHead className="text-right">Actions</TableHead>}
+                    {(canValidateActivities || isStaff) && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -315,36 +470,43 @@ function ActivitesPage() {
                         <TableCell className="whitespace-nowrap">{new Date(a.date_activite).toLocaleDateString("fr-FR")}</TableCell>
                         <TableCell>{a.enseignant ? `${a.enseignant.prenom} ${a.enseignant.nom}` : "-"}</TableCell>
                         <TableCell className="max-w-[180px] truncate">{a.cours?.intitule ?? "-"}</TableCell>
+                        <TableCell className="max-w-[180px] truncate">
+                          {ACTIONS_PEDAGOGIQUES.find((action) => action.v === a.action_pedagogique)?.l ?? "-"}
+                        </TableCell>
                         <TableCell><Badge variant="secondary">{TYPES.find((t) => t.v === a.type_activite)?.short}</Badge></TableCell>
                         <TableCell>{a.niveau_ressource.replace("niveau_", "N")}</TableCell>
                         <TableCell>{a.nombre_heures_ressource} h</TableCell>
                         <TableCell className="font-mono font-semibold text-primary">{Number(a.volume_horaire_calcule).toFixed(2)} h</TableCell>
                         <TableCell>{statusBadge(a)}</TableCell>
                         <TableCell className="max-w-[240px] truncate">{a.commentaire_validation ?? "-"}</TableCell>
-                        {isStaff && (
+                        {(canValidateActivities || isStaff) && (
                           <TableCell>
                             <div className="flex justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                disabled={status === "approuve"}
-                                onClick={() => approveActivity(a.id)}
-                                title="Approuver"
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                disabled={status === "rejete"}
-                                onClick={() => {
-                                  setRejecting(a);
-                                  setMotifRejet(a.commentaire_validation ?? "");
-                                }}
-                                title="Rejeter"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                              {canValidateActivities && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={status === "approuve"}
+                                    onClick={() => approveActivity(a.id)}
+                                    title="Approuver"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={status === "rejete"}
+                                    onClick={() => {
+                                      setRejecting(a);
+                                      setMotifRejet(a.commentaire_validation ?? "");
+                                    }}
+                                    title="Rejeter"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
                               <Button variant="ghost" size="icon" onClick={() => handleDelete(a.id)} title="Supprimer">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
