@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -47,6 +48,8 @@ function FicheEnseignantPage() {
   const [selectedTeacher, setSelectedTeacher] = useState<string>("");
   const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedFiche, setSelectedFiche] = useState<any>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,14 +107,179 @@ function FicheEnseignantPage() {
     window.print();
   };
 
+  const dashboardStats = useMemo(() => {
+    const totalEnseignants = teachers.length;
+    const totalCours = teachers.reduce((sum, teacher) => sum + (teacher.courses?.length ?? 0), 0);
+    const activitesEnAttente = teachers.reduce((sum, teacher) => sum + Number(teacher.activites_en_attente ?? 0), 0);
+    const activitesApprouvees = teachers.reduce((sum, teacher) => sum + Number(teacher.activites_approuvees ?? 0), 0);
+    const volumeValide = teachers.reduce((sum, teacher) => sum + Number(teacher.volume_total ?? 0), 0);
+    const enseignantsASuivre = teachers.filter((teacher) => Number(teacher.activites_en_attente ?? 0) > 0).length;
+
+    return {
+      totalEnseignants,
+      totalCours,
+      activitesEnAttente,
+      activitesApprouvees,
+      volumeValide,
+      enseignantsASuivre,
+    };
+  }, [teachers]);
+
+  const filteredTeachers = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return teachers.filter((teacher) => {
+      const fullName = `${teacher.prenom} ${teacher.nom}`.toLowerCase();
+      const matchesSearch =
+        !normalizedSearch ||
+        fullName.includes(normalizedSearch) ||
+        String(teacher.email ?? "").toLowerCase().includes(normalizedSearch) ||
+        String(teacher.departement ?? "").toLowerCase().includes(normalizedSearch);
+
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "a_valider" && Number(teacher.activites_en_attente ?? 0) > 0) ||
+        (statusFilter === "a_jour" && Number(teacher.activites_en_attente ?? 0) === 0) ||
+        (statusFilter === "sans_cours" && (teacher.courses?.length ?? 0) === 0);
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [search, statusFilter, teachers]);
+
+  const selectedActivities = useMemo(() => {
+    if (!selectedFiche?.activities) return [];
+    if (statusFilter === "all" || statusFilter === "a_jour" || statusFilter === "sans_cours") {
+      return selectedFiche.activities;
+    }
+    if (statusFilter === "a_valider") {
+      return selectedFiche.activities.filter((activity: any) => (activity.statut_validation ?? "en_attente") === "en_attente");
+    }
+    return selectedFiche.activities;
+  }, [selectedFiche, statusFilter]);
+
   return (
     <div className="space-y-6">
       <div className="no-print">
-        <h1 className="text-3xl font-bold">Fiche Enseignant</h1>
+        <h1 className="text-3xl font-bold">Suivi des enseignants</h1>
         <p className="text-muted-foreground">
-          Consultation et impression de fiche individuelle enseignant
+          Contrôle des cours assignés, des activités déclarées et du calendrier effectif
         </p>
       </div>
+
+      <div className="grid gap-4 no-print md:grid-cols-4">
+        <Card>
+          <CardContent className="pt-4">
+            <div className="text-sm text-muted-foreground">Enseignants</div>
+            <div className="text-3xl font-bold">{dashboardStats.totalEnseignants}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="text-sm text-muted-foreground">Cours assignés</div>
+            <div className="text-3xl font-bold">{dashboardStats.totalCours}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="text-sm text-muted-foreground">Activités à valider</div>
+            <div className="text-3xl font-bold text-orange-600">{dashboardStats.activitesEnAttente}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="text-sm text-muted-foreground">Volume validé</div>
+            <div className="text-3xl font-bold text-primary">{dashboardStats.volumeValide.toFixed(1)} h</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="no-print">
+        <CardHeader>
+          <CardTitle>Contrôle du secrétariat</CardTitle>
+          <CardDescription>
+            Repérez rapidement les enseignants à suivre et ouvrez leur calendrier effectif.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-[1fr_240px]">
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Rechercher par nom, email ou département"
+            />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les enseignants</SelectItem>
+                <SelectItem value="a_valider">Avec activités à valider</SelectItem>
+                <SelectItem value="a_jour">Sans activité en attente</SelectItem>
+                <SelectItem value="sans_cours">Sans cours assigné</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Enseignant</TableHead>
+                  <TableHead>Département</TableHead>
+                  <TableHead className="text-right">Cours</TableHead>
+                  <TableHead className="text-right">À valider</TableHead>
+                  <TableHead className="text-right">Approuvées</TableHead>
+                  <TableHead className="text-right">Volume validé</TableHead>
+                  <TableHead>Suivi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredTeachers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-sm text-muted-foreground">
+                      Aucun enseignant ne correspond aux filtres.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredTeachers.map((teacher) => (
+                    <TableRow key={teacher.id}>
+                      <TableCell>
+                        <div className="font-medium">{teacher.prenom} {teacher.nom}</div>
+                        <div className="text-xs text-muted-foreground">{teacher.email}</div>
+                      </TableCell>
+                      <TableCell>{teacher.departement}</TableCell>
+                      <TableCell className="text-right">{teacher.courses?.length ?? 0}</TableCell>
+                      <TableCell className="text-right">
+                        <span className={Number(teacher.activites_en_attente ?? 0) > 0 ? "font-semibold text-orange-600" : ""}>
+                          {teacher.activites_en_attente ?? 0}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">{teacher.activites_approuvees ?? 0}</TableCell>
+                      <TableCell className="text-right font-mono">{Number(teacher.volume_total ?? 0).toFixed(1)} h</TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="outline" onClick={() => loadFiche(teacher.id)}>
+                          Ouvrir
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="text-sm text-muted-foreground">
+            {dashboardStats.enseignantsASuivre} enseignant(s) nécessitent une validation du secrétariat.
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="no-print">
         <CardHeader>
@@ -315,9 +483,9 @@ function FicheEnseignantPage() {
 
               <TabsContent value="calendrier" className="mt-4">
                 <h3 className="mb-3 text-lg font-semibold">
-                  Calendrier des activités ({selectedFiche.activities?.length ?? 0})
+                  Calendrier des activités ({selectedActivities.length})
                 </h3>
-                {selectedFiche.activities && selectedFiche.activities.length > 0 ? (
+                {selectedActivities.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -331,7 +499,7 @@ function FicheEnseignantPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {selectedFiche.activities.map((activity: any) => {
+                      {selectedActivities.map((activity: any) => {
                         const status = activity.statut_validation ?? "en_attente";
                         const statusConfig = STATUTS[status] ?? STATUTS.en_attente;
                         return (

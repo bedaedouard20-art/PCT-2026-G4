@@ -115,15 +115,15 @@ function BaremesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-bold">Barèmes de calcul</h1>
+        <h1 className="font-display text-3xl font-bold">Barèmes administratifs</h1>
         <p className="text-muted-foreground">
-          Configurez les coefficients appliqués aux activités pédagogiques.
+          Configurez les coefficients utilisés pour convertir les actions pédagogiques en volume horaire.
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Coefficients par type et niveau</CardTitle>
+          <CardTitle>Coefficients par action et niveau</CardTitle>
         </CardHeader>
         <CardContent>
           {error ? (

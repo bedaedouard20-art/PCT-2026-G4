@@ -128,9 +128,9 @@ function AnneesAcademiquesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Années Académiques</h1>
+        <h1 className="text-3xl font-bold">Paramétrage des années académiques</h1>
         <p className="text-muted-foreground">
-          Gestion des années scolaires pour le système pédagogique
+          Définissez les périodes de référence utilisées pour les cours, validations et états.
         </p>
       </div>
 
@@ -150,7 +150,7 @@ function AnneesAcademiquesPage() {
               <div>
                 <CardTitle>Ajouter une année académique</CardTitle>
                 <CardDescription>
-                  Créer une nouvelle année scolaire
+                  Créer une nouvelle période de suivi pédagogique
                 </CardDescription>
               </div>
               <Dialog open={openDialog} onOpenChange={setOpenDialog}>

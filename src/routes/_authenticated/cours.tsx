@@ -134,12 +134,12 @@ function CoursPage() {
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold">
-            {isTeacherOnly ? "Mes cours" : "Cours et assignations"}
+            {isTeacherOnly ? "Mes cours assignés" : "Programmation des cours"}
           </h1>
           <p className="text-muted-foreground">
             {isTeacherOnly
-              ? "Consultez les cours qui vous ont été assignés avant de structurer leurs séquences et ressources."
-              : "Créez les cours, fixez les crédits et assignez-les aux enseignants."}
+              ? "Consultez les cours confiés par le secrétariat avant de structurer les séquences et ressources."
+              : "Le secrétariat fixe les crédits, assigne les cours et suit leur couverture."}
           </p>
         </div>
         {canManageCourses && (
@@ -151,7 +151,7 @@ function CoursPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{isTeacherOnly ? "Cours assignés" : "Catalogue des cours"}</CardTitle>
+          <CardTitle>{isTeacherOnly ? "Cours à produire" : "Cours proposés et assignations"}</CardTitle>
         </CardHeader>
         <CardContent>
           {coursError ? (

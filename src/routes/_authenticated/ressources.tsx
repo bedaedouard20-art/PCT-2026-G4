@@ -88,11 +88,19 @@ function RessourcesPage() {
   }
 
   function startCreate() {
+    if (!isTeacherOnly) {
+      toast.error("La gestion des ressources est réservée à l'enseignant assigné au cours.");
+      return;
+    }
     resetForm();
     setOpen(true);
   }
 
   function startEdit(ressource: any) {
+    if (!isTeacherOnly) {
+      toast.error("La modification des ressources est réservée à l'enseignant assigné au cours.");
+      return;
+    }
     setEditingId(ressource.id);
     setForm({
       sequence_id: ressource.sequence_id,
@@ -107,6 +115,10 @@ function RessourcesPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!isTeacherOnly) {
+      toast.error("La gestion des ressources est réservée à l'enseignant assigné au cours.");
+      return;
+    }
     const payload = {
       sequence_id: form.sequence_id,
       type_ressource: form.type_ressource,
@@ -134,6 +146,10 @@ function RessourcesPage() {
   }
 
   async function handleDelete(id: string) {
+    if (!isTeacherOnly) {
+      toast.error("La suppression des ressources est réservée à l'enseignant assigné au cours.");
+      return;
+    }
     if (!confirm("Supprimer cette ressource ?")) return;
     const { error } = await supabase.from("ressources_pedagogiques").delete().eq("id", id);
     if (error) return toast.error(error.message);
@@ -146,22 +162,24 @@ function RessourcesPage() {
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold">
-            {isTeacherOnly ? "Mes ressources" : "Ressources pédagogiques"}
+            {isTeacherOnly ? "Ressources produites" : "Contrôle des ressources pédagogiques"}
           </h1>
           <p className="text-muted-foreground">
             {isTeacherOnly
-              ? "Ajoutez documents, vidéos, quiz et activités interactives à vos séquences."
-              : "Consultez les contenus, vidéos, documents, quiz et évaluations des séquences."}
+              ? "Déposez les supports, quiz, évaluations et activités interactives liés à vos séquences."
+              : "Suivez les productions déposées sur les séquences de cours."}
           </p>
         </div>
-        <Button className="gap-2" onClick={startCreate}>
-          <Plus className="h-4 w-4" /> Ajouter
-        </Button>
+        {isTeacherOnly && (
+          <Button className="gap-2" onClick={startCreate}>
+            <Plus className="h-4 w-4" /> Ajouter
+          </Button>
+        )}
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{isTeacherOnly ? "Ressources de mes séquences" : "Liste des ressources"}</CardTitle>
+          <CardTitle>{isTeacherOnly ? "Productions de mes séquences" : "Ressources déposées"}</CardTitle>
         </CardHeader>
         <CardContent>
           {error ? (
@@ -183,7 +201,7 @@ function RessourcesPage() {
                   <TableHead>Type</TableHead>
                   <TableHead>Description / contenu</TableHead>
                   <TableHead className="text-right">Ordre</TableHead>
-                  <TableHead className="w-[96px]"></TableHead>
+                  {isTeacherOnly && <TableHead className="w-[96px]"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -210,16 +228,18 @@ function RessourcesPage() {
                       {r.description || r.url_ou_contenu || "-"}
                     </TableCell>
                     <TableCell className="text-right">{r.ordre_affichage}</TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => startEdit(r)} title="Modifier">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(r.id)} title="Supprimer">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {isTeacherOnly && (
+                      <TableCell>
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => startEdit(r)} title="Modifier">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(r.id)} title="Supprimer">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

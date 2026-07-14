@@ -19,6 +19,21 @@ function ChangePasswordPage() {
   const [pwd, setPwd] = useState("");
   const [confirm, setConfirm] = useState("");
 
+  async function navigateAfterPasswordChange(userId: string) {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const roles = (data ?? []).map((r: any) => r.role);
+
+    if (roles.includes("admin") || roles.includes("secretaire")) {
+      navigate({ to: "/dashboard" });
+      return;
+    }
+
+    navigate({ to: "/recapitulatif" });
+  }
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) {
@@ -34,14 +49,18 @@ function ChangePasswordPage() {
     if (pwd.length < 8) return toast.error("8 caractères minimum");
     if (pwd !== confirm) return toast.error("Les mots de passe ne correspondent pas");
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({
+    const { data, error } = await supabase.auth.updateUser({
       password: pwd,
       data: { must_change_password: false },
     });
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Mot de passe mis à jour");
-    navigate({ to: "/dashboard" });
+    if (data.user) {
+      await navigateAfterPasswordChange(data.user.id);
+      return;
+    }
+    navigate({ to: "/auth" });
   }
 
   if (checking) {

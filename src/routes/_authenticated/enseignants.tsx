@@ -84,8 +84,8 @@ function EnseignantsPage() {
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold">Enseignants</h1>
-          <p className="text-muted-foreground">Gérez les enseignants, leurs grades et leurs taux horaires</p>
+          <h1 className="font-display text-3xl font-bold">Registre des enseignants</h1>
+          <p className="text-muted-foreground">Enregistrement, rattachement départemental et suivi administratif des enseignants.</p>
         </div>
         {isStaff && (
           <Dialog open={open} onOpenChange={setOpen}>
@@ -133,7 +133,7 @@ function EnseignantsPage() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Liste des enseignants</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Enseignants enregistrés</CardTitle></CardHeader>
         <CardContent>
           {enseignantsError ? (
             <p className="text-sm text-destructive">{enseignantsError.message}</p>

@@ -31,21 +31,21 @@ const NAV: {
   icon: any;
   roles: AppRole[];
 }[] = [
-  { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, roles: ["admin", "secretaire"] },
-  { to: "/recapitulatif", label: "Mon récapitulatif", icon: FileText, roles: ["enseignant"] },
-  { to: "/cours", label: "Mes cours", icon: BookOpen, roles: ["enseignant"] },
-  { to: "/sequences", label: "Mes séquences", icon: ListOrdered, roles: ["enseignant"] },
-  { to: "/ressources", label: "Mes ressources", icon: FileStack, roles: ["enseignant"] },
-  { to: "/activites", label: "Mes activités", icon: ClipboardList, roles: ["enseignant"] },
+  { to: "/dashboard", label: "Pilotage", icon: LayoutDashboard, roles: ["admin", "secretaire"] },
+  { to: "/recapitulatif", label: "Mon suivi", icon: FileText, roles: ["enseignant"] },
+  { to: "/cours", label: "Cours assignés", icon: BookOpen, roles: ["enseignant"] },
+  { to: "/sequences", label: "Séquences", icon: ListOrdered, roles: ["enseignant"] },
+  { to: "/ressources", label: "Ressources produites", icon: FileStack, roles: ["enseignant"] },
+  { to: "/activites", label: "Activités déclarées", icon: ClipboardList, roles: ["enseignant"] },
   { to: "/enseignants", label: "Gestion des enseignants", icon: Users, roles: ["secretaire"] },
-  { to: "/cours", label: "Cours et assignations", icon: BookOpen, roles: ["secretaire"] },
+  { to: "/cours", label: "Programmation des cours", icon: BookOpen, roles: ["secretaire"] },
   { to: "/activites", label: "Validation des activités", icon: ClipboardList, roles: ["secretaire"] },
   { to: "/fiche-enseignant", label: "Suivi des enseignants", icon: UserCheck, roles: ["secretaire"] },
   { to: "/etats-paiement", label: "États de paiement", icon: DollarSign, roles: ["secretaire"] },
   { to: "/etats-globaux", label: "États globaux", icon: BarChart3, roles: ["admin", "secretaire"] },
   { to: "/baremes", label: "Barèmes", icon: SlidersHorizontal, roles: ["admin"] },
   { to: "/annees-academiques", label: "Années académiques", icon: Calendar, roles: ["admin"] },
-  { to: "/utilisateurs", label: "Utilisateurs & rôles", icon: ShieldCheck, roles: ["admin"] },
+  { to: "/utilisateurs", label: "Accès & rôles", icon: ShieldCheck, roles: ["admin"] },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {

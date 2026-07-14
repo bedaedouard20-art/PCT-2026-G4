@@ -1,16 +1,20 @@
 # Guide de reprise du projet
 
-Ce document resume l'etat actuel du projet et les actions a verifier avant livraison.
+Ce document résume l'état actuel du projet et les vérifications à faire avant une démonstration ou une livraison.
 
-## Etat actuel
+## État actuel
 
-- Le projet est connecte au nouveau projet Supabase.
-- Les migrations locales sont synchronisees avec la base distante.
-- Les donnees de depart ont ete inserees avec `supabase/seed.sql`.
-- Un compte administrateur a ete ajoute avec `supabase/create_admin.sql`.
-- Le compte enseignant `beda.atseby@uvci.edu.ci` a ete lie a sa fiche enseignant avec `supabase/link_enseignant_user.sql`.
-- Les roles gerent maintenant l'affichage du menu et les protections de routes.
-- Les exports Excel et l'impression PDF via le navigateur sont disponibles sur les pages d'etats.
+- Le projet est connecté au nouveau projet Supabase.
+- Les migrations locales sont synchronisées avec la base distante.
+- Les données de départ ont été insérées avec `supabase/seed.sql`.
+- Un compte administrateur a été ajouté avec `supabase/create_admin.sql`.
+- Le compte enseignant `beda.atseby@uvci.edu.ci` a été lié à sa fiche enseignant avec `supabase/link_enseignant_user.sql`.
+- Les rôles contrôlent l'affichage du menu, les protections de routes et les accès RLS.
+- Les enseignants peuvent gérer leurs séquences, ressources et activités déclarées.
+- Le secrétariat peut programmer les cours, fixer les crédits, assigner les enseignants, valider les activités et suivre les fiches enseignants.
+- L'administrateur gère les accès, les rôles, les années académiques et les barèmes.
+- Les exports Excel et l'impression PDF via le navigateur sont disponibles sur les pages d'états.
+- Le projet est déployé sur Render.
 
 ## Commandes utiles
 
@@ -18,6 +22,11 @@ Depuis la racine du projet:
 
 ```powershell
 cd C:\Users\HP\Downloads\thesis-guide-magic-main\thesis-guide-magic-main
+```
+
+Lancer en local:
+
+```powershell
 npm run dev -- --host 127.0.0.1 --port 8081
 ```
 
@@ -27,7 +36,7 @@ URL locale:
 http://127.0.0.1:8081
 ```
 
-Build de verification:
+Build de vérification:
 
 ```powershell
 npm run build
@@ -40,103 +49,118 @@ $env:SUPABASE_DB_PASSWORD="MOT_DE_PASSE_DATABASE_SUPABASE"
 supabase db push
 ```
 
-Verifier l'etat des migrations:
+Vérifier l'état des migrations:
 
 ```powershell
 supabase migration list
 ```
 
-## Comptes a verifier
+Envoyer les changements sur GitHub:
+
+```powershell
+git add .
+git commit -m "Message clair du changement"
+git push origin main
+```
+
+## Comptes à vérifier
 
 ### Administrateur
 
-- Email utilise: `atsebyedouard@gmail.com`
-- Role attendu: `admin`
-- Pages attendues: toutes les pages, dont utilisateurs, annees academiques et baremes.
+- Rôle attendu: `admin`
+- Responsabilités: comptes, accès, rôles, années académiques, barèmes, états globaux.
+- Pages attendues: pilotage, états globaux, barèmes, années académiques, accès et rôles.
+
+### Secrétaire
+
+- Rôle attendu: `secretaire`
+- Responsabilités: enseignants, programmation des cours, crédits, assignations, validations, suivi.
+- Pages attendues: pilotage, gestion des enseignants, programmation des cours, validation des activités, suivi des enseignants, états de paiement, états globaux.
+- Pages interdites: accès et rôles, années académiques, barèmes.
 
 ### Enseignant
 
-- Email utilise: `beda.atseby@uvci.edu.ci`
-- Role attendu: `enseignant`
-- Pages attendues: recapitulatif, cours, activites pedagogiques.
-- Pages interdites: dashboard global, enseignants, sequences, ressources, etats, baremes, annees academiques, utilisateurs.
+- Rôle attendu: `enseignant`
+- Responsabilités: consulter ses cours assignés, créer ses séquences, déposer ses ressources, déclarer ses activités, suivre son récapitulatif.
+- Pages attendues: mon suivi, cours assignés, séquences, ressources produites, activités déclarées.
+- Pages interdites: pilotage global, accès, barèmes, années académiques, états globaux.
 
-### Secretaire
-
-Si besoin, creer un compte Supabase Auth puis ajouter le role `secretaire` dans `public.user_roles`.
-
-Pages attendues:
-
-- Dashboard
-- Fiches enseignants
-- Enseignants
-- Cours
-- Sequences pedagogiques
-- Ressources pedagogiques
-- Activites pedagogiques
-- Etats de paiement
-- Etats globaux
-- Recapitulatif
-
-Pages interdites:
-
-- Utilisateurs
-- Annees academiques
-- Baremes
-
-## Verification fonctionnelle par role
+## Vérification fonctionnelle par rôle
 
 ### Admin
 
-1. Se connecter avec le compte administrateur.
-2. Verifier que toutes les entrees du menu sont visibles.
-3. Modifier un bareme dans `Baremes`.
-4. Verifier que le calcul previsionnel d'une activite utilise le bareme actif.
-5. Exporter un etat de paiement en Excel.
-6. Lancer `Imprimer / PDF` depuis un etat.
+1. Se connecter avec un compte administrateur.
+2. Vérifier que les pages administratives sont visibles.
+3. Créer ou modifier un utilisateur.
+4. Attribuer ou retirer un rôle.
+5. Modifier un barème.
+6. Vérifier que le calcul prévisionnel d'une activité utilise le barème actif.
+7. Consulter les états globaux.
+
+### Secrétaire
+
+1. Se connecter avec un compte secrétaire.
+2. Vérifier que les pages administratives sensibles ne sont pas visibles.
+3. Créer ou modifier un enseignant.
+4. Créer ou modifier un cours.
+5. Fixer les crédits du cours.
+6. Assigner le cours à un enseignant.
+7. Ouvrir le suivi des enseignants et filtrer la liste.
+8. Approuver une activité.
+9. Rejeter une activité avec un motif obligatoire.
+10. Générer un état de paiement.
 
 ### Enseignant
 
-1. Se connecter avec `beda.atseby@uvci.edu.ci`.
-2. Verifier que le menu ne montre que recapitulatif, cours et activites.
-3. Verifier que le recapitulatif affiche uniquement ses donnees.
-4. Verifier que ses cours et ses activites sont visibles.
-5. Essayer d'acceder manuellement a `/dashboard`: l'application doit rediriger vers `/recapitulatif`.
-
-### Secretaire
-
-1. Se connecter avec un compte ayant le role `secretaire`.
-2. Verifier que les pages administratives sensibles ne sont pas visibles.
-3. Creer ou modifier un enseignant.
-4. Creer ou modifier un cours, une sequence et une ressource.
-5. Approuver une activite.
-6. Rejeter une activite avec un motif obligatoire.
+1. Se connecter avec un compte enseignant lié à une fiche enseignant.
+2. Vérifier que seuls ses espaces sont visibles.
+3. Consulter ses cours assignés.
+4. Créer une séquence pour un cours assigné.
+5. Ajouter une ressource à une séquence.
+6. Déclarer une activité pédagogique.
+7. Vérifier que le niveau et le volume sont calculés automatiquement.
+8. Consulter son récapitulatif.
+9. Essayer d'accéder manuellement à `/dashboard`: l'application doit rediriger vers son espace autorisé.
 
 ## Scripts SQL utiles
 
-Creer ou mettre a jour l'admin:
+Créer ou mettre à jour l'admin:
 
 ```text
 supabase/create_admin.sql
 ```
 
-Lier un utilisateur Auth a une fiche enseignant:
+Lier un utilisateur Auth à une fiche enseignant:
 
 ```text
 supabase/link_enseignant_user.sql
 ```
 
-Inserer les donnees de demonstration:
+Insérer les données de démonstration:
 
 ```text
 supabase/seed.sql
+```
+
+## Variables Render
+
+Les variables à renseigner dans Render sont:
+
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
+VITE_APP_URL
+SUPABASE_URL
+SUPABASE_PUBLISHABLE_KEY
+SUPABASE_SERVICE_ROLE_KEY
+APP_URL
 ```
 
 ## Erreurs connues
 
 ### `permission denied for function has_role`
 
-Cause probable: les droits d'execution de la fonction SQL `has_role` n'ont pas encore ete pousses.
+Cause probable: les droits d'exécution de la fonction SQL `has_role` n'ont pas encore été poussés.
 
 Action:
 
@@ -158,14 +182,14 @@ supabase db push
 
 ### Timeout TLS pendant `supabase db push`
 
-Cause probable: probleme reseau temporaire entre le poste et l'API Supabase.
+Cause probable: problème réseau temporaire entre le poste et l'API Supabase.
 
-Action: relancer la commande apres quelques minutes.
+Action: relancer la commande après quelques minutes.
 
-### Excel affiche un avertissement a l'ouverture
+### Excel affiche un avertissement à l'ouverture
 
-Les exports sont generes en XML Spreadsheet compatible Excel avec une extension `.xls`. Excel peut afficher un avertissement de format; accepter l'ouverture du fichier.
+Les exports sont générés en XML Spreadsheet compatible Excel avec une extension `.xls`. Excel peut afficher un avertissement de format; accepter l'ouverture du fichier.
 
-## Prochaine etape conseillee
+## Prochaine vérification conseillée
 
-Faire une passe de nettoyage final sur les textes visibles dans l'application, notamment les accents et libelles, puis refaire un test complet avec les trois roles.
+Faire un test complet sur Render avec les trois profils: administrateur, secrétaire et enseignant. Vérifier surtout les créations de séquences, ressources, activités, validations et états.

@@ -157,8 +157,10 @@ function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-bold">Tableau de bord</h1>
-        <p className="text-muted-foreground">Vue d'ensemble de la charge pédagogique et des validations</p>
+        <h1 className="font-display text-3xl font-bold">Pilotage pédagogique</h1>
+        <p className="text-muted-foreground">
+          Suivi institutionnel des enseignants, validations, charges et volumes horaires.
+        </p>
       </div>
 
       {error ? (
@@ -170,25 +172,25 @@ function Dashboard() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Stat icon={Users} label="Enseignants" value={isLoading ? "..." : data?.nbEnseignants ?? 0} />
         <Stat icon={BookOpen} label="Cours" value={isLoading ? "..." : data?.nbCours ?? 0} />
-        <Stat icon={ClipboardList} label="Activités" value={isLoading ? "..." : data?.nbActivites ?? 0} />
+        <Stat icon={ClipboardList} label="Activités déclarées" value={isLoading ? "..." : data?.nbActivites ?? 0} />
         <Stat
           icon={CheckCircle2}
           label="Volume validé"
           value={isLoading ? "..." : `${(data?.totalVolume ?? 0).toFixed(1)} h`}
-          hint="Activités approuvées uniquement"
+          hint="Après validation du secrétariat"
         />
         <Stat
           icon={AlertTriangle}
           label="En attente"
           value={isLoading ? "..." : data?.nbEnAttente ?? 0}
-          hint="À valider ou rejeter"
+          hint="File de contrôle du secrétariat"
         />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Statistiques mensuelles</CardTitle>
+            <CardTitle>Calendrier mensuel des volumes validés</CardTitle>
           </CardHeader>
           <CardContent className="h-80">
             {data && data.statsMensuelles.length > 0 ? (
@@ -211,7 +213,7 @@ function Dashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Répartition par type d'activité</CardTitle>
+            <CardTitle>Nature des productions pédagogiques</CardTitle>
           </CardHeader>
           <CardContent className="h-80">
             {data && data.parType.some((t: any) => t.volume > 0) ? (
@@ -255,7 +257,7 @@ function Dashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Top volumes par enseignant</CardTitle>
+            <CardTitle>Suivi des volumes par enseignant</CardTitle>
           </CardHeader>
           <CardContent>
             {data && data.parEns.length > 0 ? (

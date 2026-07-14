@@ -21,13 +21,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Plateforme institutionnelle de gestion des enseignants, activités pédagogiques, volumes horaires et états de paiement.",
+          "Plateforme institutionnelle de suivi des enseignants, productions pédagogiques, validations, volumes horaires et états administratifs.",
       },
       { property: "og:title", content: "UVCI - Gestion des heures d'enseignement" },
       {
         property: "og:description",
         content:
-          "Suivi des activités pédagogiques, calcul automatique des volumes horaires et production des états administratifs.",
+          "Cours proposés par l'administration, ressources produites par les enseignants, validation du secrétariat et calcul automatique des volumes.",
       },
     ],
   }),
@@ -42,23 +42,23 @@ const FEATURES = [
   },
   {
     icon: BookOpen,
-    title: "Cours et ressources",
-    desc: "Organisation des cours, séquences pédagogiques et ressources numériques associées.",
+    title: "Cours proposés",
+    desc: "Programmation des cours, crédits, assignations aux enseignants et suivi des niveaux.",
   },
   {
     icon: ClipboardCheck,
-    title: "Validation",
-    desc: "Suivi des activités en attente, approbation, rejet motivé et historisation des décisions.",
+    title: "Validation secrétariat",
+    desc: "Contrôle des activités en attente, approbation, rejet motivé et suivi effectif du calendrier.",
   },
   {
     icon: Calculator,
-    title: "Calcul horaire",
-    desc: "Application automatique des barèmes selon le type d'activité et le niveau de ressource.",
+    title: "Calcul automatique",
+    desc: "Déduction du niveau selon l'action réalisée et application automatique des barèmes.",
   },
   {
     icon: BarChart3,
     title: "Pilotage",
-    desc: "Tableaux de bord par enseignant, département, type d'activité et période.",
+    desc: "Tableaux de bord par enseignant, département, cours, action pédagogique et période.",
   },
   {
     icon: FileSpreadsheet,
@@ -70,15 +70,15 @@ const FEATURES = [
 const ROLES = [
   {
     title: "Administrateur",
-    desc: "Paramètre les utilisateurs, les rôles, les années académiques et les barèmes.",
+    desc: "Gère les accès, les comptes, les rôles, les années académiques, les barèmes et les paramètres.",
   },
   {
     title: "Secrétaire",
-    desc: "Gère les enseignants, cours, ressources, activités, validations et états.",
+    desc: "Enregistre les enseignants, fixe les crédits, assigne les cours, valide les activités et suit le calendrier.",
   },
   {
     title: "Enseignant",
-    desc: "Consulte ses cours, ses activités pédagogiques et son récapitulatif personnel.",
+    desc: "Gère les séquences, dépose les ressources, déclare ses activités et consulte son récapitulatif.",
   },
 ];
 

@@ -161,9 +161,9 @@ function UtilisateursPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">Gestion des utilisateurs</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight">Accès et comptes utilisateurs</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Créez de nouveaux comptes et gérez les rôles administrateur, secrétaire et enseignant.
+            L'administrateur crée les comptes, attribue les rôles et contrôle les accès à la plateforme.
           </p>
         </div>
         <div className="flex gap-2">

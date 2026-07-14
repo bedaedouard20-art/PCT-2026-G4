@@ -1,42 +1,41 @@
 # Résumé de l'application
 
-Cette application permet à l'UVCI de gérer les activités pédagogiques des enseignants, de calculer les volumes horaires associés et de produire les états nécessaires au suivi administratif et au paiement.
+Cette application permet à l'UVCI de suivre les enseignants, les cours, les productions pédagogiques, les validations administratives et les volumes horaires associés.
 
-## Objectif principal
+## Objectif
 
-L'application centralise les informations liées aux enseignants, aux cours, aux ressources pédagogiques produites et aux activités déclarées. Elle automatise ensuite le calcul des volumes horaires selon des barèmes configurables, puis fournit des tableaux de bord, récapitulatifs et états exportables.
+La plateforme centralise les informations liées aux enseignants, aux cours proposés, aux séquences pédagogiques, aux ressources produites et aux activités déclarées. Elle calcule automatiquement les volumes horaires selon les actions réalisées et les barèmes configurés, puis produit des tableaux de bord, récapitulatifs et états exportables.
 
-## Utilisateurs concernés
+## Rôles utilisateurs
 
 ### Administrateur
 
-L'administrateur dispose de l'accès complet à l'application. Il peut gérer les utilisateurs, les rôles, les années académiques, les barèmes de calcul, les enseignants, les cours, les activités et les états.
+L'administrateur gère les accès, les comptes, les rôles, les années académiques et les barèmes de calcul. Il supervise aussi les états globaux et les paramètres de la plateforme.
 
 ### Secrétaire
 
-Le secrétaire gère la partie administrative courante. Il peut suivre les enseignants, les cours, les séquences, les ressources pédagogiques et les activités. Il peut aussi valider ou rejeter les activités pédagogiques et consulter les états.
+Le secrétaire assure le suivi administratif courant. Il enregistre les enseignants, programme les cours, fixe les crédits, assigne les cours aux enseignants, valide ou rejette les activités déclarées et suit le calendrier pédagogique.
 
 ### Enseignant
 
-L'enseignant accède uniquement à ses informations utiles: ses cours, ses activités pédagogiques et son récapitulatif personnel.
+L'enseignant consulte les cours qui lui sont assignés, crée les séquences de ces cours, dépose les ressources pédagogiques, déclare ses activités et consulte son récapitulatif personnel.
 
 ## Fonctionnalités principales
 
 - Authentification avec Supabase Auth.
-- Gestion des rôles: administrateur, secrétaire, enseignant.
-- Gestion des enseignants et de leurs informations administratives.
-- Gestion des cours assignés aux enseignants.
-- Gestion des séquences pédagogiques liées aux cours.
-- Gestion des ressources pédagogiques liées aux séquences.
-- Déclaration et suivi des activités pédagogiques.
-- Validation ou rejet des activités avec commentaire.
-- Calcul automatique du volume horaire selon le type d'activité, le niveau de ressource et les barèmes actifs.
-- Tableau de bord global pour suivre les volumes, validations, départements et dépassements de charge.
-- Récapitulatif personnel pour chaque enseignant.
-- États de paiement par enseignant.
-- États globaux par département et statut.
-- Exports Excel.
-- Impression navigateur pour générer des PDF.
+- Gestion des rôles administrateur, secrétaire et enseignant.
+- Enregistrement et suivi des enseignants.
+- Programmation des cours et assignation aux enseignants.
+- Gestion des séquences pédagogiques par cours.
+- Dépôt de ressources pédagogiques: documents, vidéos, quiz, évaluations et activités interactives.
+- Déclaration des activités pédagogiques par les enseignants.
+- Validation ou rejet des activités par le secrétariat, avec motif en cas de rejet.
+- Calcul automatique du niveau et du volume horaire selon l'action pédagogique.
+- Paramétrage des barèmes de calcul par l'administrateur.
+- Tableaux de bord de pilotage.
+- Récapitulatif individuel par enseignant.
+- États de paiement et états globaux.
+- Exports Excel et impression PDF via le navigateur.
 
 ## Données principales
 
@@ -53,34 +52,19 @@ L'application s'appuie sur les tables Supabase suivantes:
 - `activites_pedagogiques`
 - `baremes_activites`
 
-## Logique de calcul
+## Logique métier
 
-Chaque activité pédagogique possède:
+L'administration paramètre les accès, les années et les barèmes. Le secrétariat programme les cours, fixe les crédits et assigne les cours aux enseignants. L'enseignant produit les séquences, les ressources et les déclarations d'activités. Le secrétariat valide ensuite ces activités, ce qui permet de consolider les volumes horaires et les états.
 
-- un type d'activité, par exemple création ou mise à jour;
-- un niveau de ressource;
-- un nombre d'heures de ressource;
-- un barème actif correspondant.
+Le volume horaire est calculé automatiquement à partir de l'action pédagogique, du niveau déduit et du barème actif. Les récapitulatifs et états de paiement se basent sur les activités approuvées.
 
-Le volume horaire est calculé automatiquement à partir du nombre d'heures et du coefficient du barème actif. Les états de paiement et les récapitulatifs se basent sur les activités approuvées.
-
-## Sécurité et accès
+## Sécurité
 
 Les accès sont contrôlés à deux niveaux:
 
-- côté interface, le menu affiche seulement les pages autorisées pour le rôle connecté;
+- côté interface, le menu affiche uniquement les pages autorisées pour le rôle connecté;
 - côté base de données, les politiques RLS Supabase limitent l'accès aux données selon le rôle et l'utilisateur connecté.
 
-## Livrables produits
+## État du projet
 
-L'application permet de produire:
-
-- un récapitulatif enseignant;
-- un état de paiement;
-- un état global;
-- des exports Excel;
-- des impressions PDF via le navigateur.
-
-## État actuel du projet
-
-Le projet est configuré pour fonctionner avec le nouveau projet Supabase. Les migrations, rôles, données de départ, barèmes, exports, validations et restrictions d'accès par rôle ont été mis en place.
+Le projet est connecté à Supabase, déployé sur Render et prêt pour les tests fonctionnels avec les trois profils: administrateur, secrétaire et enseignant.

@@ -86,7 +86,7 @@ function ActivitesPage() {
   const qc = useQueryClient();
   const { isStaff, hasRole, user } = useAuth();
   const isTeacherOnly = hasRole("enseignant") && !isStaff;
-  const canCreateActivity = isStaff || isTeacherOnly;
+  const canCreateActivity = isTeacherOnly;
   const canValidateActivities = hasRole("secretaire");
   const [open, setOpen] = useState(false);
   const [rejecting, setRejecting] = useState<any | null>(null);
@@ -128,16 +128,6 @@ function ActivitesPage() {
   const previewVolume = useMemo(() => {
     return (Number(form.nombre_heures_ressource) * activeCoefficient).toFixed(2);
   }, [activeCoefficient, form.nombre_heures_ressource]);
-
-  const { data: enseignants } = useQuery({
-    queryKey: ["enseignants-list"],
-    enabled: isStaff,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("enseignants").select("id, nom, prenom").order("nom");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
 
   const { data: enseignantConnecte } = useQuery({
     queryKey: ["enseignant-connecte", user?.id],
@@ -198,7 +188,8 @@ function ActivitesPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    const enseignantId = isTeacherOnly ? enseignantConnecte?.id : form.enseignant_id;
+    if (!canCreateActivity) return toast.error("La déclaration d'activité est réservée aux enseignants");
+    const enseignantId = enseignantConnecte?.id;
     const payload = {
       enseignant_id: enseignantId,
       cours_id: form.cours_id || null,
@@ -285,12 +276,12 @@ function ActivitesPage() {
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold">
-            {isTeacherOnly ? "Mes activités pédagogiques" : "Activités pédagogiques"}
+            {isTeacherOnly ? "Mes activités déclarées" : "Validation des activités pédagogiques"}
           </h1>
           <p className="text-muted-foreground">
             {isTeacherOnly
-              ? "Déclarez vos actions pédagogiques, avec niveau et volume calculés automatiquement."
-              : "Saisie, validation et suivi des volumes horaires calculés."}
+              ? "Déclarez vos actions pédagogiques avec niveau et volume calculés automatiquement."
+              : "File de validation du secrétariat et traçabilité des productions déclarées."}
           </p>
         </div>
         {canCreateActivity && (
@@ -301,26 +292,12 @@ function ActivitesPage() {
             <DialogContent className="max-w-2xl">
               <DialogHeader><DialogTitle>Nouvelle activité pédagogique</DialogTitle></DialogHeader>
               <form onSubmit={handleCreate} className="grid grid-cols-2 gap-4">
-                {isStaff ? (
-                  <div className="col-span-2">
-                    <Label>Enseignant</Label>
-                    <Select value={form.enseignant_id} onValueChange={(v) => setForm({ ...form, enseignant_id: v })}>
-                      <SelectTrigger><SelectValue placeholder="Choisir un enseignant" /></SelectTrigger>
-                      <SelectContent>
-                        {(enseignants ?? []).map((e: any) => (
-                          <SelectItem key={e.id} value={e.id}>{e.prenom} {e.nom}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                <div className="col-span-2 rounded-md border bg-secondary/40 p-3 text-sm">
+                  <div className="text-xs text-muted-foreground">Enseignant</div>
+                  <div className="font-medium">
+                    {enseignantConnecte ? `${enseignantConnecte.prenom} ${enseignantConnecte.nom}` : "Compte enseignant non lié"}
                   </div>
-                ) : (
-                  <div className="col-span-2 rounded-md border bg-secondary/40 p-3 text-sm">
-                    <div className="text-xs text-muted-foreground">Enseignant</div>
-                    <div className="font-medium">
-                      {enseignantConnecte ? `${enseignantConnecte.prenom} ${enseignantConnecte.nom}` : "Compte enseignant non lié"}
-                    </div>
-                  </div>
-                )}
+                </div>
                 <div className="col-span-2">
                   <Label>Cours</Label>
                   <Select value={form.cours_id} onValueChange={(v) => setForm({ ...form, cours_id: v })}>
@@ -436,7 +413,7 @@ function ActivitesPage() {
       )}
 
       <Card>
-        <CardHeader><CardTitle>Activités enregistrées</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Registre des activités déclarées</CardTitle></CardHeader>
         <CardContent>
           {activitesError ? (
             <p className="text-sm text-destructive">{activitesError.message}</p>
